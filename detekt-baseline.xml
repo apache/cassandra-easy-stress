@@ -1,0 +1,150 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues></ManuallySuppressedIssues>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:SchemaBuilder.kt$SchemaBuilder$fun parseCompaction(compaction: String): Compaction</ID>
+    <ID>EmptyForBlock:PartitionKeyGeneratorTest.kt$PartitionKeyGeneratorTest${ }</ID>
+    <ID>EmptyFunctionBlock:CreateDrop.kt$CreateDrop${ }</ID>
+    <ID>EmptyFunctionBlock:FunctionLoaderTest.kt$FunctionLoaderTest${ }</ID>
+    <ID>EmptyFunctionBlock:LastName.kt$LastName${ }</ID>
+    <ID>EmptyFunctionBlock:TxnCounter.kt$TxnCounter${}</ID>
+    <ID>EmptyFunctionBlock:USCities.kt$USCities${ }</ID>
+    <ID>ForbiddenComment:Info.kt$Info$// TODO: Show dynamic parameters</ID>
+    <ID>ForbiddenComment:Plugin.kt$Plugin$* Wrapper for Stress Profile Plugins * Anything found in the class path will be returned. * TODO: Add a caching layer to prevent absurdly slow * reflection time</ID>
+    <ID>ForbiddenComment:SingleLineConsoleReporter.kt$SingleLineConsoleReporter$// TODO: refactor this + the above loop to be a single function</ID>
+    <ID>IteratorNotThrowingNoSuchElementException:FunctionLoader.kt$FunctionLoader$&lt;no name provided&gt; : Iterator</ID>
+    <ID>LongMethod:Run.kt$Run$override fun execute()</ID>
+    <ID>LongParameterList:RequestQueue.kt$RequestQueue$( private val partitionKeyGenerator: PartitionKeyGenerator, context: StressContext, totalValues: Long, duration: Long, runner: IStressRunner, readRate: Double, deleteRate: Double, val populatePhase: Boolean = false, )</ID>
+    <ID>LoopWithTooManyJumpStatements:Plugin.kt$Plugin$for</ID>
+    <ID>LoopWithTooManyJumpStatements:RequestQueue.kt$RequestQueue$for</ID>
+    <ID>MagicNumber:AllowFiltering.kt$AllowFiltering$100</ID>
+    <ID>MagicNumber:AllowFiltering.kt$AllowFiltering.&lt;no name provided&gt;$3</ID>
+    <ID>MagicNumber:AsyncCollector.kt$AsyncCollector$4096</ID>
+    <ID>MagicNumber:BasicTimeSeries.kt$BasicTimeSeries$100</ID>
+    <ID>MagicNumber:BasicTimeSeries.kt$BasicTimeSeries$200</ID>
+    <ID>MagicNumber:BasicTimeSeries.kt$BasicTimeSeries$30</ID>
+    <ID>MagicNumber:BasicTimeSeries.kt$BasicTimeSeries$500</ID>
+    <ID>MagicNumber:Book.kt$Book$20</ID>
+    <ID>MagicNumber:Book.kt$Book$50</ID>
+    <ID>MagicNumber:CountersWide.kt$CountersWide$10000</ID>
+    <ID>MagicNumber:CreateDrop.kt$CreateDrop$10</ID>
+    <ID>MagicNumber:CreateDrop.kt$CreateDrop$1000</ID>
+    <ID>MagicNumber:CreateDrop.kt$CreateDrop$20</ID>
+    <ID>MagicNumber:CreateDrop.kt$CreateDrop$60.0</ID>
+    <ID>MagicNumber:DSESearch.kt$DSESearch$10</ID>
+    <ID>MagicNumber:DSESearch.kt$DSESearch$100</ID>
+    <ID>MagicNumber:DSESearch.kt$DSESearch$10000</ID>
+    <ID>MagicNumber:DSESearch.kt$DSESearch$5</ID>
+    <ID>MagicNumber:FileReporter.kt$FileReporter$1000</ID>
+    <ID>MagicNumber:Gaussian.kt$Gaussian$1000000</ID>
+    <ID>MagicNumber:HdrCollector.kt$HdrCollector$1_000_000.0</ID>
+    <ID>MagicNumber:HumanReadableConverter.kt$HumanReadableConverter$1000000000L</ID>
+    <ID>MagicNumber:HumanReadableConverter.kt$HumanReadableConverter$1000000L</ID>
+    <ID>MagicNumber:HumanReadableConverter.kt$HumanReadableConverter$1000L</ID>
+    <ID>MagicNumber:KeyValue.kt$KeyValue$100</ID>
+    <ID>MagicNumber:KeyValue.kt$KeyValue$200</ID>
+    <ID>MagicNumber:MaterializedViews.kt$MaterializedViews.&lt;no name provided&gt;$110</ID>
+    <ID>MagicNumber:Metrics.kt$Metrics$3</ID>
+    <ID>MagicNumber:PartitionKeyGenerator.kt$PartitionKeyGenerator.Companion$4.0</ID>
+    <ID>MagicNumber:ProfileRunner.kt$ProfileRunner$3000</ID>
+    <ID>MagicNumber:Random.kt$Random$100000L</ID>
+    <ID>MagicNumber:Random.kt$Random$65</ID>
+    <ID>MagicNumber:Random.kt$Random$90</ID>
+    <ID>MagicNumber:RandomPartitionAccess.kt$RandomPartitionAccess$100</ID>
+    <ID>MagicNumber:RandomPartitionAccess.kt$RandomPartitionAccess$200</ID>
+    <ID>MagicNumber:RateLimiterOptimizer.kt$RateLimiterOptimizer$0.9</ID>
+    <ID>MagicNumber:RateLimiterOptimizer.kt$RateLimiterOptimizer$0.90</ID>
+    <ID>MagicNumber:RateLimiterOptimizer.kt$RateLimiterOptimizer$1.05</ID>
+    <ID>MagicNumber:RateLimiterOptimizer.kt$RateLimiterOptimizer$10.0</ID>
+    <ID>MagicNumber:RateLimiterOptimizer.kt$RateLimiterOptimizer$100</ID>
+    <ID>MagicNumber:RateLimiterOptimizer.kt$RateLimiterOptimizer$100.0</ID>
+    <ID>MagicNumber:RequestQueue.kt$RequestQueue$100</ID>
+    <ID>MagicNumber:RequestQueue.kt$RequestQueue$1000</ID>
+    <ID>MagicNumber:Run.kt$1000000</ID>
+    <ID>MagicNumber:Run.kt$Run$1000</ID>
+    <ID>MagicNumber:Run.kt$Run$10000</ID>
+    <ID>MagicNumber:Run.kt$Run$1000000L</ID>
+    <ID>MagicNumber:Run.kt$Run$100L</ID>
+    <ID>MagicNumber:Run.kt$Run$32768</ID>
+    <ID>MagicNumber:Run.kt$Run$5000</ID>
+    <ID>MagicNumber:Run.kt$Run$5000L</ID>
+    <ID>MagicNumber:Run.kt$Run$8</ID>
+    <ID>MagicNumber:Run.kt$Run$9042</ID>
+    <ID>MagicNumber:Run.kt$Run$9500</ID>
+    <ID>MagicNumber:SAI.kt$SAI$10000</ID>
+    <ID>MagicNumber:SAI.kt$SAI.&lt;no name provided&gt;$3</ID>
+    <ID>MagicNumber:Sets.kt$Sets$16</ID>
+    <ID>MagicNumber:Sets.kt$Sets$6</ID>
+    <ID>MagicNumber:SingleLineConsoleReporter.kt$SingleLineConsoleReporter$10L</ID>
+    <ID>MagicNumber:SingleLineConsoleReporter.kt$SingleLineConsoleReporter$6</ID>
+    <ID>MagicNumber:ThroughputTracker.kt$ThroughputTracker$1000.0</ID>
+    <ID>MagicNumber:USCities.kt$USCities$3</ID>
+    <ID>MagicNumber:USCities.kt$USCities$4</ID>
+    <ID>MagicNumber:UdtTimeSeries.kt$UdtTimeSeries$100</ID>
+    <ID>MagicNumber:UdtTimeSeries.kt$UdtTimeSeries$200</ID>
+    <ID>MagicNumber:UdtTimeSeries.kt$UdtTimeSeries$500</ID>
+    <ID>MagicNumber:UdtTimeSeries.kt$UdtTimeSeries.&lt;no name provided&gt;$3</ID>
+    <ID>MagicNumber:Util.kt$65</ID>
+    <ID>MagicNumber:Util.kt$90</ID>
+    <ID>MaxLineLength:AllowFiltering.kt$AllowFiltering$insert = session.prepare("INSERT INTO allow_filtering (partition_id, row_id, value, payload) values (?, ?, ?, ?)")</ID>
+    <ID>MaxLineLength:CountersWide.kt$CountersWide.&lt;no name provided&gt;$val clusteringKey = (ThreadLocalRandom.current().nextGaussian() * rowsPerPartition.toDouble()).roundToLong()</ID>
+    <ID>MaxLineLength:FunctionLoader.kt$FunctionLoader.&lt;no name provided&gt;$val annotation = tmp.value.getAnnotation(Function::class.java) ?: throw AnnotationMissingException(tmp.value)</ID>
+    <ID>MaxLineLength:Info.kt$Info$println("${row.name.padEnd(cols[0])} | ${row.description.padEnd(cols[1])} | ${row.type.padEnd(cols[2])}")</ID>
+    <ID>MaxLineLength:Locking.kt$Locking$*</ID>
+    <ID>MaxLineLength:Locking.kt$Locking$override fun getPopulateOption(args: Run): PopulateOption</ID>
+    <ID>MaxLineLength:ParquetCollector.kt$ParquetCollector$ParquetTableWriter(if (fileOrDirectory.isDirectory) File(fileOrDirectory, "rawlog.parquet") else fileOrDirectory)</ID>
+    <ID>MaxLineLength:ParquetCollector.kt$ParquetCollector.ParquetTableWriter$val serviceStartMillis = requestStartMillis + TimeUnit.NANOSECONDS.toMillis(serviceStartNanos - requestStartNanos)</ID>
+    <ID>MaxLineLength:ParsedFieldFunction.kt$ParsedFieldFunction$val searchResult = regex.find(function)?.groupValues ?: throw Exception("Could not parse $function as a field function")</ID>
+    <ID>MaxLineLength:Plugin.kt$Plugin$(prop.annotations.firstOrNull { it.annotationClass == WorkloadParameter::class } as? WorkloadParameter)</ID>
+    <ID>MaxLineLength:RateLimiterOptimizer.kt$RateLimiterOptimizer$log.debug("Read latency more critical: ${readLatencyRatio.format(2)} of max vs write ${writeLatencyRatio.format(2)}")</ID>
+    <ID>MaxLineLength:RateLimiterOptimizer.kt$RateLimiterOptimizer$log.debug("Write latency more critical: ${writeLatencyRatio.format(2)} of max vs read ${readLatencyRatio.format(2)}")</ID>
+    <ID>MaxLineLength:Run.kt$Run$"The readRate + deleteRate must be &lt;= 1.0. Values supplied were: readRate = $tmpReadRate and deleteRate = $tmpDeleteRate."</ID>
+    <ID>MaxLineLength:Run.kt$Run$*</ID>
+    <ID>MaxLineLength:Run.kt$Run$// var sampleRate : Double? = null // .1%.. this might be better as a number, like a million. reasonable to keep in memory</ID>
+    <ID>MaxLineLength:Run.kt$Run$// without this cleanup we could have the metrics runner still running and it will cause subsequent tests to fail</ID>
+    <ID>MaxLineLength:Run.kt$Run$@Parameter(names = ["--rate"], description = "Throughput rate, accepts human numbers", converter = HumanReadableConverter::class)</ID>
+    <ID>MaxLineLength:Run.kt$Run$description = "DEPRECATED. Concurrent queries allowed. Increase for larger clusters. This flag is deprecated and does nothing."</ID>
+    <ID>MaxLineLength:SchemaBuilderTest.kt$SchemaBuilderTest$val result = createTable.withCompaction("{ 'class': 'LeveledCompactionStrategy', 'sstable_size_in_mb': 100}").build()</ID>
+    <ID>MaxLineLength:StressContext.kt$Context$fun stress(thread: Int): StressContext</ID>
+    <ID>MaxLineLength:TxnCounter.kt$TxnCounter.&lt;no name provided&gt;$override fun getNextMutation(partitionKey: PartitionKey): Operation</ID>
+    <ID>MaxLineLength:USCities.kt$USCities$cities = reader.lines().skip(1).map { it.split("|") }.filter { it.size &gt; 4 }.map { City(it[0], it[1], it[2], it[3]) }.toList()</ID>
+    <ID>MaxLineLength:UdtTimeSeries.kt$UdtTimeSeries.&lt;no name provided&gt;$val udtValue = udt.newValue().setString("data1", chunks[0]).setString("data2", chunks[1]).setString("data3", chunks[2])</ID>
+    <ID>MayBeConst:Run.kt$val DEFAULT_ITERATIONS: Long = 1000000</ID>
+    <ID>PrintStackTrace:AsyncCollector.kt$AsyncCollector$t</ID>
+    <ID>PrintStackTrace:Main.kt$e</ID>
+    <ID>ReturnCount:RateLimiterOptimizer.kt$RateLimiterOptimizer$fun execute(): Double</ID>
+    <ID>ReturnCount:RateLimiterOptimizer.kt$RateLimiterOptimizer$fun getCurrentAndMaxLatency(): Optional&lt;Pair&lt;Double, Long&gt;&gt;</ID>
+    <ID>ReturnCount:RateLimiterOptimizer.kt$RateLimiterOptimizer$fun getNextValue( currentRate: Double, currentLatency: Double, maxLatency: Long, ): Double</ID>
+    <ID>ReturnCount:RateLimiterOptimizer.kt$RateLimiterOptimizer$private fun optimizeRateLimit( currentLatency: Double, maxLatency: Long, ): Double</ID>
+    <ID>ReturnCount:ThroughputTracker.kt$ThroughputTracker$fun getCurrentThroughput(): Double</ID>
+    <ID>ReturnCount:ThroughputTracker.kt$ThroughputTracker$fun getWindowSizeMs(): Long</ID>
+    <ID>SpreadOperator:CommandLineParser.kt$CommandLineParser.Companion$(*arguments)</ID>
+    <ID>SpreadOperator:Run.kt$Run$(*collectors.toTypedArray())</ID>
+    <ID>SwallowedException:Run.kt$Run$nsee: java.util.NoSuchElementException</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:ThroughputTracker.kt$ThroughputTracker$IllegalStateException()</ID>
+    <ID>TooGenericExceptionCaught:AsyncCollector.kt$AsyncCollector$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:CreateDrop.kt$CreateDrop$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Main.kt$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:ProfileRunner.kt$ProfileRunner$e: Exception</ID>
+    <ID>TooGenericExceptionCaught:Run.kt$Run$e: Exception</ID>
+    <ID>TooGenericExceptionThrown:ParsedFieldFunction.kt$ParsedFieldFunction$throw Exception("Could not parse $function as a field function")</ID>
+    <ID>TooGenericExceptionThrown:Random.kt$Random$throw Exception("Int larger than Int.MAX_VALUE requested, use a long instead")</ID>
+    <ID>TooGenericExceptionThrown:RandomPartitionAccess.kt$RandomPartitionAccess$throw RuntimeException("select must be row or partition.")</ID>
+    <ID>TooGenericExceptionThrown:RandomPartitionAccess.kt$RandomPartitionAccess.&lt;no name provided&gt;$throw RuntimeException("not even sure how you got here")</ID>
+    <ID>TooGenericExceptionThrown:SchemaBuilder.kt$SchemaBuilder.WindowUnit.Companion$throw Exception("not a thing")</ID>
+    <ID>TooGenericExceptionThrown:UdtTimeSeries.kt$UdtTimeSeries.&lt;no name provided&gt;$throw RuntimeException("No keyspace selected")</ID>
+    <ID>TooManyFunctions:RateLimiterOptimizer.kt$RateLimiterOptimizer</ID>
+    <ID>UnusedPrivateProperty:BookTest.kt$BookTest$i</ID>
+    <ID>UnusedPrivateProperty:ConsistencyLevelConverterTest.kt$ConsistencyLevelConverterTest$val cl = converter.convert("LOCAL")</ID>
+    <ID>UnusedPrivateProperty:FirstName.kt$FirstName$s</ID>
+    <ID>UnusedPrivateProperty:FunctionLoaderTest.kt$FunctionLoaderTest$val function = FunctionLoader()</ID>
+    <ID>UnusedPrivateProperty:HumanReadableTimeConverterTest.kt$HumanReadableTimeConverterTest$val cl = converter.convert("BLAh")</ID>
+    <ID>UnusedPrivateProperty:PartitionKeyGeneratorTest.kt$PartitionKeyGeneratorTest$x</ID>
+    <ID>UnusedPrivateProperty:SchemaBuilderTest.kt$SchemaBuilderTest$val cql = compaction.toCQL()</ID>
+    <ID>UnusedPrivateProperty:SingleLineConsoleReporter.kt$SingleLineConsoleReporter$x</ID>
+    <ID>UnusedPrivateProperty:USCitiesTest.kt$USCitiesTest$i</ID>
+    <ID>UseCheckOrError:ThroughputTracker.kt$ThroughputTracker$throw IllegalStateException()</ID>
+    <ID>UseRequire:HumanReadableTimeConverter.kt$HumanReadableTimeConverter$throw IllegalArgumentException("Value $value resulted in 0 time duration")</ID>
+    <ID>UselessPostfixExpression:AllPluginsBasicTest.kt$AllPluginsBasicTest$prometheusPort++</ID>
+  </CurrentIssues>
+</SmellBaseline>
