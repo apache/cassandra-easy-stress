@@ -33,6 +33,7 @@ plugins {
     id "nebula.ospackage" version "9.1.1"
     id "nebula.ospackage-application"  version "9.1.1"
     id "org.jlleitschuh.gradle.ktlint" version "12.1.2"
+    id "io.gitlab.arturbosch.detekt" version "1.23.7"
 }
 
 
@@ -204,3 +205,20 @@ wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
 targetCompatibility = JavaVersion.VERSION_11
+
+detekt {
+    toolVersion = "1.23.7"
+    source = files("src/main/kotlin", "src/test/kotlin")
+    parallel = true
+    config = files("$projectDir/detekt-config.yml")
+    buildUponDefaultConfig = true
+    allRules = false
+    baseline = file("$projectDir/detekt-baseline.xml")
+    disableDefaultRuleSets = false
+    debug = false
+    ignoreFailures = false
+    ignoredBuildTypes = ["release"]
+    ignoredFlavors = ["production"]
+    ignoredVariants = ["productionRelease"]
+    autoCorrect = false
+}
