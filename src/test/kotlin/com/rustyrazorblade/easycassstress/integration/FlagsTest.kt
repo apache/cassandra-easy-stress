@@ -36,6 +36,8 @@ class FlagsTest : CassandraTestBase() {
                 iterations = 100
                 host = ip
                 dc = localDc
+                useOptimizer = false
+                prometheusPort = 0
                 replication = "{'class': 'SimpleStrategy', 'replication_factor':1 }"
             }
     }

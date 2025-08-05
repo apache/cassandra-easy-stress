@@ -286,6 +286,8 @@ class Run(
     @Parameter(names = ["--hdr"], description = "Print HDR Histograms using this prefix")
     var hdrHistogramPrefix = ""
 
+    var useOptimizer = true
+
     val session by lazy {
         // Build a programmatic config
         var configLoaderBuilder =
@@ -411,13 +413,19 @@ class Run(
         val metrics = createMetrics()
 
         // set up the rate limiter optimizer and put it on a schedule
-        var optimizer = RateLimiterOptimizer(rateLimiter, metrics, maxReadLatency, maxWriteLatency)
-        optimizer.reset()
+        val optimizer =
+            if (useOptimizer) {
+                val opt = RateLimiterOptimizer(rateLimiter, metrics, maxReadLatency, maxWriteLatency)
+                opt.reset()
 
-        // Schedule the optimizer to run periodically
-        Timer().schedule(10000, 5000) {
-            optimizer.execute()
-        }
+                // Schedule the optimizer to run periodically
+                Timer().schedule(10000, 5000) {
+                    opt.execute()
+                }
+                opt
+            } else {
+                null
+            }
 
         var runnersExecuted = 0L
 
@@ -434,7 +442,7 @@ class Run(
 
             // since the populate workload is going to be substantially different
             // from the test workload, we need to reset the optimizer
-            optimizer.reset()
+            optimizer?.reset()
 
             metrics.startReporting()
             println("Prometheus metrics are available at http://localhost:$prometheusPort/")

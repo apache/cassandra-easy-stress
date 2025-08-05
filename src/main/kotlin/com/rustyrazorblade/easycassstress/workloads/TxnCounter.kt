@@ -2,6 +2,7 @@ package com.rustyrazorblade.easycassstress.workloads
 
 import com.datastax.oss.driver.api.core.CqlSession
 import com.rustyrazorblade.easycassstress.PartitionKey
+import com.rustyrazorblade.easycassstress.RequireAccord
 import com.rustyrazorblade.easycassstress.StressContext
 import com.rustyrazorblade.easycassstress.WorkloadParameter
 
@@ -42,6 +43,7 @@ enum class Impl {
  * cassandra-easy-stress run TxnCounter --workload.postfix=test_run1
  * ```
  */
+@RequireAccord
 class TxnCounter : IStressProfile {
     @WorkloadParameter("Which type of transaction system to use")
     var impl = Impl.LWT
