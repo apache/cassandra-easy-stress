@@ -22,6 +22,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.rustyrazorblade.easycassstress.PartitionKey
+import com.rustyrazorblade.easycassstress.RequireDSE
 import com.rustyrazorblade.easycassstress.StressContext
 import com.rustyrazorblade.easycassstress.WorkloadParameter
 import com.rustyrazorblade.easycassstress.generators.Field
@@ -30,6 +31,7 @@ import com.rustyrazorblade.easycassstress.generators.functions.Book
 import com.rustyrazorblade.easycassstress.generators.functions.Random
 import java.util.concurrent.ThreadLocalRandom
 
+@RequireDSE
 class DSESearch : IStressProfile {
     val table: String = "dse_search"
     val minValueTextSize = 5

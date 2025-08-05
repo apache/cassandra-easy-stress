@@ -67,6 +67,31 @@ data class Plugin(
 
             return result
         }
+
+        /**
+         * Returns plugins suitable for testing, filtering out those requiring
+         * special environments unless corresponding environment variables are set.
+         */
+        fun getPluginsForTesting(envVars: Map<String, String> = System.getenv()): Map<String, Plugin> {
+            val allPlugins = getPlugins()
+            val testDSE = envVars["TEST_DSE"] == "1"
+            val testMVs = envVars["TEST_MVS"] == "1"
+            val testAccord = envVars["TEST_ACCORD"] == "1"
+
+            return allPlugins.filterValues { plugin ->
+                // Check if the plugin class has @RequireDSE, @RequireMVs, or @RequireAccord annotations
+                val requiresDSE = plugin.cls.isAnnotationPresent(RequireDSE::class.java)
+                val requiresMVs = plugin.cls.isAnnotationPresent(RequireMVs::class.java)
+                val requiresAccord = plugin.cls.isAnnotationPresent(RequireAccord::class.java)
+
+                // Include the plugin if:
+                // - It doesn't require DSE, MVs, or Accord, OR
+                // - It requires DSE AND TEST_DSE is set, OR
+                // - It requires MVs AND TEST_MVS is set, OR
+                // - It requires Accord AND TEST_ACCORD is set to "1"
+                (!requiresDSE || testDSE) && (!requiresMVs || testMVs) && (!requiresAccord || testAccord)
+            }
+        }
     }
 
     /**

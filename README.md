@@ -54,3 +54,56 @@ Time series workload with Cassandra Authentication enabled:
 # Generating docs
 
 Docs are served out of /docs and can be rebuild using `./gradlew docs`.
+
+# Testing
+
+## Running Tests
+
+To run the test suite:
+
+    ./gradlew test
+
+## Special Workloads
+
+Some workloads require specific features or configurations that may not be available in all Cassandra deployments. These workloads are marked with special annotations and are skipped by default when running tests.
+
+### DSE-Specific Workloads
+
+Workloads that require DataStax Enterprise (DSE) features are marked with the `@RequireDSE` annotation.
+
+Currently, the following workloads require DSE:
+- `DSESearch` - Uses DSE Search (Solr) functionality
+
+To run tests that require DSE, set the `TEST_DSE` environment variable:
+
+    TEST_DSE=1 ./gradlew test
+
+### Materialized Views Workloads
+
+Workloads that use Materialized Views are marked with the `@RequireMVs` annotation. Materialized Views are not enabled by default. 
+
+Currently, the following workloads require Materialized Views:
+- `MaterializedViews` - Tests materialized view functionality
+
+To run tests that require Materialized Views, set the `TEST_MVS` environment variable:
+
+    TEST_MVS=1 ./gradlew test
+
+### Accord Workloads
+
+Workloads that use Accord (available in Cassandra 6.0+) are marked with the `@RequireAccord` annotation.
+
+Currently, the following workloads require Accord:
+- `TxnCounter` - Tests Accord transaction functionality
+
+To run tests that require Accord, set the `TEST_ACCORD` environment variable:
+
+    TEST_ACCORD=1 ./gradlew test
+
+### Running All Tests
+
+To run all tests including DSE, Materialized Views, and Accord workloads:
+
+    TEST_DSE=1 TEST_MVS=1 TEST_ACCORD=1 ./gradlew test
+
+Make sure you have the appropriate Cassandra configuration and features enabled before running these specialized tests.

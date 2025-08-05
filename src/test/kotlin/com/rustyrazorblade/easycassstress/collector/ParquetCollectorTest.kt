@@ -46,7 +46,7 @@ internal class ParquetCollectorTest {
 
         Assertions.assertThat(expected).exists().isFile.doesNotHave(
             object : Condition<File>() {
-                override fun matches(value: File?): Boolean = Files.toByteArray(value).equals(unexpectedBytes)
+                override fun matches(value: File?): Boolean = value?.let { Files.toByteArray(it).contentEquals(unexpectedBytes) } ?: false
             },
         )
     }

@@ -22,12 +22,14 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.TestInstance
 import java.net.InetSocketAddress
 
 /**
  * Base class for Cassandra integration tests
  * Provides common setup logic for connection handling
  */
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class CassandraTestBase {
     companion object {
         // Connection parameters with environment variable fallbacks
@@ -43,33 +45,29 @@ abstract class CassandraTestBase {
                 .withString(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, "30s")
                 .withString(DefaultDriverOption.CONNECTION_SET_KEYSPACE_TIMEOUT, "10s")
                 .build()
+    }
 
-        // Shared session for all tests
-        val connection = createSession()
+    // Instance-level connection for each test class
+    protected lateinit var connection: CqlSession
 
-        // Initialize the session
-        private fun createSession(): CqlSession {
-            println("Connecting to Cassandra at $ip using datacenter $localDc")
-            return CqlSession.builder()
-                .addContactPoint(InetSocketAddress(ip, 9042))
-                .withLocalDatacenter(localDc)
-                .withConfigLoader(configLoader)
-                .build()
-        }
+    @BeforeAll
+    fun setupClass() {
+        // Create connection for this test class
+        println("Connecting to Cassandra at $ip using datacenter $localDc")
+        connection = CqlSession.builder()
+            .addContactPoint(InetSocketAddress(ip, 9042))
+            .withLocalDatacenter(localDc)
+            .withConfigLoader(configLoader)
+            .build()
 
-        @JvmStatic
-        @BeforeAll
-        fun setupClass() {
-            // Ensure keyspace doesn't exist before tests
-            connection.execute("DROP KEYSPACE IF EXISTS easy_cass_stress")
-        }
+        // Ensure keyspace doesn't exist before tests
+        connection.execute("DROP KEYSPACE IF EXISTS easy_cass_stress")
+    }
 
-        @JvmStatic
-        @AfterAll
-        fun teardownClass() {
-            // Clean up resources after tests
-            connection.close()
-        }
+    @AfterAll
+    fun teardownClass() {
+        // Clean up resources after tests
+        connection.close()
     }
 
     // Cleanup before each test case

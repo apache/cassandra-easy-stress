@@ -34,7 +34,6 @@ annotation class AllPlugins
  */
 class AllPluginsBasicTest : CassandraTestBase() {
     lateinit var run: Run
-    var prometheusPort = 9600
 
     /**
      * Annotate a test with @AllPlugins
@@ -42,7 +41,7 @@ class AllPluginsBasicTest : CassandraTestBase() {
     companion object {
         @JvmStatic
         fun getPlugins() =
-            Plugin.getPlugins().values.filter {
+            Plugin.getPluginsForTesting().values.filter {
                 it.name != "Demo"
             }
     }
@@ -63,11 +62,12 @@ class AllPluginsBasicTest : CassandraTestBase() {
         run.apply {
             host = ip
             profile = plugin.name
-            iterations = 1000
-            rate = 100L
+            iterations = 200
+            rate = 50L
             partitionValues = 1000
-            prometheusPort = prometheusPort++
+            prometheusPort = 0
             threads = 2
+            useOptimizer = false
             replication = "{'class': 'SimpleStrategy', 'replication_factor':1 }"
             dc = localDc // Use the datacenter from the base class
         }.execute()

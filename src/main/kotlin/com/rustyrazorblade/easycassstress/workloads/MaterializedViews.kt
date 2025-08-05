@@ -20,6 +20,7 @@ package com.rustyrazorblade.easycassstress.workloads
 import com.datastax.oss.driver.api.core.CqlSession
 import com.datastax.oss.driver.api.core.cql.PreparedStatement
 import com.rustyrazorblade.easycassstress.PartitionKey
+import com.rustyrazorblade.easycassstress.RequireMVs
 import com.rustyrazorblade.easycassstress.StressContext
 import com.rustyrazorblade.easycassstress.generators.Field
 import com.rustyrazorblade.easycassstress.generators.FieldFactory
@@ -29,6 +30,7 @@ import com.rustyrazorblade.easycassstress.generators.functions.LastName
 import com.rustyrazorblade.easycassstress.generators.functions.USCities
 import java.util.concurrent.ThreadLocalRandom
 
+@RequireMVs
 class MaterializedViews : IStressProfile {
     override fun prepare(session: CqlSession) {
         insert = session.prepare("INSERT INTO person (name, age, city) values (?, ?, ?)")
