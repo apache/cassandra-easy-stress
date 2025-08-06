@@ -44,7 +44,7 @@ Configuration:
 
     logger:
       -
-        name: com.rustyrazorblade.easycassstress
+        name: org.apache.cassandra.easystress
         level: debug
         AppenderRef:
           - ref: STDOUT

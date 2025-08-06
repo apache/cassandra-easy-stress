@@ -43,13 +43,13 @@ apply plugin: 'kotlin'
 apply plugin: 'application'
 apply plugin: 'com.github.johnrengelman.shadow'
 
-group 'com.rustyrazorblade'
+group 'org.apache.cassandra'
 
 sourceCompatibility = 11
 
 application {
     applicationName = "cassandra-easy-stress"
-    mainClassName = "com.rustyrazorblade.easycassstress.MainKt"
+    mainClassName = "org.apache.cassandra.easystress.MainKt"
 }
 
 repositories {

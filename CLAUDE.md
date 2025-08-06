@@ -4,7 +4,7 @@
 - Build: `./gradlew shadowJar`
 - Run: `bin/cassandra-easy-stress`
 - Run tests: `./gradlew test`
-- Run single test: `./gradlew test --tests "com.rustyrazorblade.easycassstress.MainArgumentsTest"`
+- Run single test: `./gradlew test --tests "org.apache.cassandra.easystress.MainArgumentsTest"`
 - Format code: `./gradlew ktlintFormat`
 - Check formatting: `./gradlew ktlintCheck`
 - Generate docs: `./gradlew docs`
