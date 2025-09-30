@@ -25,7 +25,7 @@ import org.apache.cassandra.easystress.generators.Field
 import org.apache.cassandra.easystress.generators.FieldGenerator
 import org.apache.cassandra.easystress.generators.functions.Random
 
-class Sets : IStressProfile {
+class Sets : IStressWorkload {
     lateinit var insert: PreparedStatement
     lateinit var update: PreparedStatement
     lateinit var select: PreparedStatement

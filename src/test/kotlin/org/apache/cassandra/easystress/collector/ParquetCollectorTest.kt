@@ -2,11 +2,11 @@ package org.apache.cassandra.easystress.collector
 
 import com.datastax.oss.driver.api.core.CqlSession
 import com.google.common.io.Files
+import io.mockk.mockk
 import org.apache.cassandra.easystress.Context
 import org.apache.cassandra.easystress.Metrics
 import org.apache.cassandra.easystress.commands.Run
 import org.apache.cassandra.easystress.generators.Registry
-import io.mockk.mockk
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Condition
 import org.junit.jupiter.api.Test

@@ -18,7 +18,7 @@
 package org.apache.cassandra.easystress
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement
-import org.apache.cassandra.easystress.workloads.IStressProfile
+import org.apache.cassandra.easystress.workloads.IStressWorkload
 import org.apache.cassandra.easystress.workloads.Operation
 import org.apache.logging.log4j.kotlin.logger
 import java.time.Duration
@@ -34,19 +34,19 @@ class PartitionKeyGeneratorException : Exception()
  * Logs all errors along the way
  * Keeps track of useful metrics, per thread
  */
-class ProfileRunner(
+class WorkloadRunner(
     val context: StressContext,
-    val profile: IStressProfile,
+    val profile: IStressWorkload,
     val partitionKeyGenerator: PartitionKeyGenerator,
 ) {
     companion object {
         fun create(
             context: StressContext,
-            profile: IStressProfile,
-        ): ProfileRunner {
+            profile: IStressWorkload,
+        ): WorkloadRunner {
             val partitionKeyGenerator = getGenerator(context, context.mainArguments.partitionKeyGenerator)
 
-            return ProfileRunner(context, profile, partitionKeyGenerator)
+            return WorkloadRunner(context, profile, partitionKeyGenerator)
         }
 
         fun getGenerator(
@@ -106,11 +106,18 @@ class ProfileRunner(
             print("Running the profile for ${context.mainArguments.iterations} iterations...")
         } else {
             val startTime = LocalTime.now()
-            val endTime = startTime.plus(Duration.ofMinutes(context.mainArguments.duration))
+            val endTime = startTime.plus(Duration.ofSeconds(context.mainArguments.duration))
             val formatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
 
+            val durationDisplay =
+                if (context.mainArguments.duration < 60) {
+                    "${context.mainArguments.duration}s"
+                } else {
+                    "${context.mainArguments.duration / 60}m ${context.mainArguments.duration % 60}s"
+                }
+
             print(
-                "Running the profile for ${context.mainArguments.duration}min (start: ${formatter.format(
+                "Running the profile for $durationDisplay (start: ${formatter.format(
                     startTime,
                 )} end: ${formatter.format(endTime)})",
             )

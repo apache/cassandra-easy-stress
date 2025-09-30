@@ -45,7 +45,7 @@ abstract class CassandraTestBase {
         private const val DEFAULT_CASSANDRA_IP = "127.0.0.1"
         private const val DEFAULT_DATACENTER = "datacenter1"
         private const val DEFAULT_PORT = 9042
-        private const val TEST_KEYSPACE = "easy_cass_stress"
+        private const val TEST_KEYSPACE = "cassandra_easy_stress_tests"
 
         // Timeout constants
         private const val REQUEST_TIMEOUT_SECONDS = 30L

@@ -22,7 +22,7 @@ import com.datastax.oss.driver.api.core.cql.PreparedStatement
 import org.apache.cassandra.easystress.PartitionKey
 import org.apache.cassandra.easystress.StressContext
 
-class Maps : IStressProfile {
+class Maps : IStressWorkload {
     lateinit var insert: PreparedStatement
     lateinit var select: PreparedStatement
     lateinit var delete: PreparedStatement

@@ -44,7 +44,7 @@ enum class Impl {
  * ```
  */
 @RequireAccord
-class TxnCounter : IStressProfile {
+class TxnCounter : IStressWorkload {
     @WorkloadParameter("Which type of transaction system to use")
     var impl = Impl.LWT
 

@@ -52,11 +52,11 @@ class RequestQueue(
             thread(start = false) {
                 // hack to ensure we don't start before the process is ready
 
-                val desiredEndTime = LocalDateTime.now().plusMinutes(duration)
+                val desiredEndTime = LocalDateTime.now().plusSeconds(duration)
                 var executed = 0L
                 log.info("populate=$populatePhase total values: $totalValues, duration: $duration")
 
-                for (key in partitionKeyGenerator.generateKey(totalValues, context.mainArguments.partitionValues)) {
+                for (key in partitionKeyGenerator.generateKey(totalValues, context.mainArguments.partitionCount)) {
                     if (duration > 0 && desiredEndTime.isBefore(LocalDateTime.now())) {
                         log.info("Reached duration, ending")
                         break

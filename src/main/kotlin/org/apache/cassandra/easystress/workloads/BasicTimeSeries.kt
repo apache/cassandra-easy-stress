@@ -32,7 +32,7 @@ import java.time.LocalDateTime
  * Create a simple time series use case with some number of partitions
  * TODO make it use TWCS
  */
-class BasicTimeSeries : IStressProfile {
+class BasicTimeSeries : IStressWorkload {
     override fun schema(): List<String> {
         val query =
             """

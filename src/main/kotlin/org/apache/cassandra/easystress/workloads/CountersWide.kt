@@ -25,7 +25,7 @@ import org.apache.cassandra.easystress.WorkloadParameter
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.math.roundToLong
 
-class CountersWide : IStressProfile {
+class CountersWide : IStressWorkload {
     lateinit var increment: PreparedStatement
     lateinit var selectOne: PreparedStatement
     lateinit var selectAll: PreparedStatement

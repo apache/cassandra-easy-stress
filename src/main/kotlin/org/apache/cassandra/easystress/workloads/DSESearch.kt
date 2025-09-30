@@ -32,7 +32,7 @@ import org.apache.cassandra.easystress.generators.functions.Random
 import java.util.concurrent.ThreadLocalRandom
 
 @RequireDSE
-class DSESearch : IStressProfile {
+class DSESearch : IStressWorkload {
     val table: String = "dse_search"
     val minValueTextSize = 5
     val maxValueTextSize = 10

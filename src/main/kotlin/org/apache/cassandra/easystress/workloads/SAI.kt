@@ -38,7 +38,7 @@ const val TABLE: String = "sai"
 const val MIN_VALUE_TEXT_SIZE = 1
 const val MAX_VALUE_TEXT_SIZE = 2
 
-class SAI : IStressProfile {
+class SAI : IStressWorkload {
     @WorkloadParameter(description = "Operator to use for SAI queries, defaults to equality = search.")
     var intCompare = "="
 

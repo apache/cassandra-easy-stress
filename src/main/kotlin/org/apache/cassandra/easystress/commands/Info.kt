@@ -20,7 +20,7 @@ package org.apache.cassandra.easystress.commands
 import com.beust.jcommander.Parameter
 import com.beust.jcommander.Parameters
 import com.github.ajalt.mordant.TermColors
-import org.apache.cassandra.easystress.Plugin
+import org.apache.cassandra.easystress.Workload
 
 @Parameters(commandDescription = "Get details of a specific workload.")
 class Info : IStressCommand {
@@ -31,15 +31,15 @@ class Info : IStressCommand {
         // Description
         // Schema
         // Field options
-        val plugin = Plugin.getPlugins().get(profile)!!
+        val workload = Workload.getWorkloads().get(profile)!!
 
-        for (cql in plugin.instance.schema()) {
+        for (cql in workload.instance.schema()) {
             println(cql)
         }
 
-        println("Default read rate: ${plugin.instance.getDefaultReadRate()} (override with -r)\n")
+        println("Default read rate: ${workload.instance.getDefaultReadRate()} (override with -r)\n")
 
-        val params = plugin.getCustomParams()
+        val params = workload.getCustomParams()
 
         if (params.size > 0) {
             println("Dynamic workload parameters (override with --workload.name=X)\n")

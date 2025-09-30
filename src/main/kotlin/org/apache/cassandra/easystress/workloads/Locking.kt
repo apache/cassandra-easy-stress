@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 0: normal
  * 1: temporarily locked
  */
-class Locking : IStressProfile {
+class Locking : IStressWorkload {
     lateinit var insert: PreparedStatement
     lateinit var update: PreparedStatement
     lateinit var select: PreparedStatement
@@ -68,7 +68,7 @@ class Locking : IStressProfile {
         return listOf(query)
     }
 
-    override fun getPopulateOption(args: Run): PopulateOption = PopulateOption.Custom(args.partitionValues, deletes = false)
+    override fun getPopulateOption(args: Run): PopulateOption = PopulateOption.Custom(args.partitionCount, deletes = false)
 
     override fun getPopulatePartitionKeyGenerator(): Optional<PartitionKeyGenerator> {
         return Optional.of(PartitionKeyGenerator.sequence("test"))
@@ -78,7 +78,7 @@ class Locking : IStressProfile {
         return object : IStressRunner {
             // this test can't do more than 2 billion partition keys
 
-            val state: ConcurrentHashMap<String, Int> = ConcurrentHashMap(context.mainArguments.partitionValues.toInt())
+            val state: ConcurrentHashMap<String, Int> = ConcurrentHashMap(context.mainArguments.partitionCount.toInt())
 
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val currentState = state.getOrDefault(partitionKey.getText(), 0)

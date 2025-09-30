@@ -1,0 +1,96 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.cassandra.easystress.server.tools
+
+import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.TextContent
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Test
+
+class ListWorkloadsToolTest {
+    private fun CallToolResult.textContent(): String = (this.content.first() as TextContent).text!!
+
+    @Test
+    fun `should list available workloads`() =
+        runTest {
+            val request = CallToolRequest(name = "list_workloads", arguments = EmptyJsonObject)
+            val result = ListWorkloadsTool.handler(request)
+
+            assertThat(result.isError).isFalse()
+            assertThat(result.content).isNotEmpty()
+
+            val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
+
+            // Should have workloads array and total count
+            assertThat(jsonResponse.containsKey("workloads")).isTrue()
+            assertThat(jsonResponse.containsKey("total")).isTrue()
+
+            val workloads = jsonResponse["workloads"]?.jsonArray
+            assertThat(workloads).isNotNull
+            assertThat(workloads!!.size).isGreaterThan(0)
+
+            // Each workload should have a name
+            val firstWorkload = workloads.first().jsonObject
+            assertThat(firstWorkload.containsKey("name")).isTrue()
+
+            // Total should match array size
+            val total = jsonResponse["total"]?.jsonPrimitive?.content?.toInt()
+            assertThat(total).isEqualTo(workloads.size)
+        }
+
+    @Test
+    fun `should include known workloads`() =
+        runTest {
+            val request = CallToolRequest(name = "list_workloads", arguments = EmptyJsonObject)
+            val result = ListWorkloadsTool.handler(request)
+
+            val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
+            val workloads = jsonResponse["workloads"]?.jsonArray
+
+            val workloadNames =
+                workloads?.map {
+                    it.jsonObject["name"]?.jsonPrimitive?.content
+                }
+
+            // Should include some known workloads
+            assertThat(workloadNames).isNotNull
+            assertThat(workloadNames).isNotEmpty()
+        }
+
+    @Test
+    fun `should return consistent results across multiple calls`() =
+        runTest {
+            val request = CallToolRequest(name = "list_workloads", arguments = EmptyJsonObject)
+
+            val result1 = ListWorkloadsTool.handler(request)
+            val result2 = ListWorkloadsTool.handler(request)
+
+            val response1 = result1.textContent()
+            val response2 = result2.textContent()
+
+            // Results should be identical
+            assertThat(response1).isEqualTo(response2)
+        }
+}

@@ -31,7 +31,7 @@ import org.apache.cassandra.easystress.generators.functions.Random
  * Create a simple time series use case with some number of partitions
  * TODO make it use TWCS
  */
-class UdtTimeSeries : IStressProfile {
+class UdtTimeSeries : IStressWorkload {
     override fun schema(): List<String> {
         val queryUdt =
             """

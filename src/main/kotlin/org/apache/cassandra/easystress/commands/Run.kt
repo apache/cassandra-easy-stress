@@ -29,15 +29,25 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader
 import com.google.common.base.Preconditions
 import com.google.common.util.concurrent.RateLimiter
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import me.tongfei.progressbar.ProgressBar
+import me.tongfei.progressbar.ProgressBarStyle
 import org.apache.cassandra.easystress.Context
 import org.apache.cassandra.easystress.FileReporter
 import org.apache.cassandra.easystress.Metrics
-import org.apache.cassandra.easystress.Plugin
 import org.apache.cassandra.easystress.PopulateOption
-import org.apache.cassandra.easystress.ProfileRunner
+import org.apache.cassandra.easystress.WorkloadRunner
 import org.apache.cassandra.easystress.RateLimiterOptimizer
 import org.apache.cassandra.easystress.SchemaBuilder
 import org.apache.cassandra.easystress.SingleLineConsoleReporter
+import org.apache.cassandra.easystress.Workload
 import org.apache.cassandra.easystress.collector.Collector
 import org.apache.cassandra.easystress.collector.CompositeCollector
 import org.apache.cassandra.easystress.collector.HdrCollector
@@ -47,8 +57,6 @@ import org.apache.cassandra.easystress.converters.HumanReadableConverter
 import org.apache.cassandra.easystress.converters.HumanReadableTimeConverter
 import org.apache.cassandra.easystress.generators.ParsedFieldFunction
 import org.apache.cassandra.easystress.generators.Registry
-import me.tongfei.progressbar.ProgressBar
-import me.tongfei.progressbar.ProgressBarStyle
 import org.apache.logging.log4j.kotlin.logger
 import java.io.File
 import java.util.Timer
@@ -58,6 +66,36 @@ import kotlin.concurrent.thread
 
 val DEFAULT_ITERATIONS: Long = 1000000
 
+object ConsistencyLevelSerializer : KSerializer<ConsistencyLevel> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("ConsistencyLevel", PrimitiveKind.STRING)
+
+    override fun serialize(
+        encoder: Encoder,
+        value: ConsistencyLevel,
+    ) {
+        encoder.encodeString(value.name())
+    }
+
+    override fun deserialize(decoder: Decoder): ConsistencyLevel {
+        val name = decoder.decodeString()
+        return when (name.uppercase()) {
+            "ANY" -> ConsistencyLevel.ANY
+            "ONE" -> ConsistencyLevel.ONE
+            "TWO" -> ConsistencyLevel.TWO
+            "THREE" -> ConsistencyLevel.THREE
+            "QUORUM" -> ConsistencyLevel.QUORUM
+            "ALL" -> ConsistencyLevel.ALL
+            "LOCAL_ONE" -> ConsistencyLevel.LOCAL_ONE
+            "LOCAL_QUORUM" -> ConsistencyLevel.LOCAL_QUORUM
+            "EACH_QUORUM" -> ConsistencyLevel.EACH_QUORUM
+            "LOCAL_SERIAL" -> ConsistencyLevel.LOCAL_SERIAL
+            "SERIAL" -> ConsistencyLevel.SERIAL
+            else -> throw IllegalArgumentException("Unknown consistency level: $name")
+        }
+    }
+}
+
 class NoSplitter : IParameterSplitter {
     override fun split(value: String?): MutableList<String> = mutableListOf(value!!)
 }
@@ -66,9 +104,10 @@ class NoSplitter : IParameterSplitter {
  * command is the original command that started the program.
  * It's used solely for logging and reporting purposes.
  */
+@Serializable
 @Parameters(commandDescription = "Run a cassandra-easy-stress profile")
 class Run(
-    val command: String,
+    val command: String = "",
 ) : IStressCommand {
     @Parameter(names = ["--host"])
     var host = System.getenv("CASSANDRA_EASY_STRESS_CASSANDRA_HOST") ?: "127.0.0.1"
@@ -83,7 +122,7 @@ class Run(
     var password = "cassandra"
 
     @Parameter(required = true)
-    var profile = ""
+    var workload = ""
 
     @Parameter(
         names = ["--compaction"],
@@ -93,11 +132,18 @@ class Run(
     )
     var compaction = ""
 
-    @Parameter(names = ["--compression"], description = "Compression options")
+    @Parameter(names = ["--compression"], description = "Compression option to pass to CREATE TABLE. Example: {'class':'ZstdCompressor'}")
     var compression = ""
 
-    @Parameter(names = ["--keyspace"], description = "Keyspace to use")
-    var keyspace = "easy_cass_stress"
+    /**
+     * Keyspace to use for stress testing.
+     *
+     * Default changed from "easy_cass_stress" to "cassandra_easy_stress" to align
+     * with the project naming conventions. Users upgrading from previous versions
+     * should specify --keyspace explicitly to maintain backward compatibility.
+     */
+    @Parameter(names = ["--keyspace"], description = "Keyspace to use.  Automatically created.  Use replication option to adjust options.")
+    var keyspace = "cassandra_easy_stress"
 
     @Parameter(
         names = ["--id"],
@@ -112,7 +158,7 @@ class Run(
         description = "Max value of integer component of first partition key.",
         converter = HumanReadableConverter::class,
     )
-    var partitionValues = 1000000L
+    var partitionCount = 1000000L
 
 //    @Parameter(names = ["--sample", "-s"], description = "Sample Rate (0-1)")
 //    var sampleRate : Double? = null // .1%..  this might be better as a number, like a million.  reasonable to keep in memory
@@ -189,12 +235,14 @@ class Run(
                 "set custom default with CASSANDRA_EASY_STRESS_CONSISTENCY_LEVEL).",
         converter = ConsistencyLevelConverter::class,
     )
+    @Serializable(with = ConsistencyLevelSerializer::class)
     var consistencyLevel =
         System.getenv("CASSANDRA_EASY_STRESS_CONSISTENCY_LEVEL")?.let {
             ConsistencyLevelConverter().convert(it)
         } ?: ConsistencyLevel.LOCAL_ONE
 
     @Parameter(names = ["--scl"], description = "Serial consistency level")
+    @Serializable(with = ConsistencyLevelSerializer::class)
     var serialConsistencyLevel =
         System.getenv("CASSANDRA_EASY_STRESS_SERIAL_CONSISTENCY_LEVEL")?.let {
             ConsistencyLevelConverter().convert(it)
@@ -275,7 +323,13 @@ class Run(
     )
     var deleteRate: Double? = null
 
+    @Transient
     val log = logger()
+
+    // Expose metrics for external access (e.g., MCP server)
+    @Transient
+    @Volatile
+    var currentMetrics: Metrics? = null
 
     @Parameter(names = ["--max-requests"], description = "Sets the max requests per connection")
     var maxRequestsPerConnection: Int = 32768
@@ -364,16 +418,16 @@ class Run(
             "Partition generator Supports random, normal, and sequence.",
         )
 
-        val plugin = Plugin.getPlugins().get(profile) ?: error("$profile profile does not exist")
+        val workload = Workload.getWorkloads().get(this@Run.workload) ?: error("${this@Run.workload} profile does not exist")
 
         // Check the workload parameters exist in the workload before we start testing.
         workloadParameters.forEach { (key) ->
             (
                 try {
-                    plugin.getProperty(key)
+                    workload.getProperty(key)
                 } catch (nsee: java.util.NoSuchElementException) {
                     error(
-                        "Workload $profile has no parameter '$key'. Please run the 'info' command to " +
+                        "Workload ${this@Run.workload} has no parameter '$key'. Please run the 'info' command to " +
                             "see the list of available parameters for this workload.",
                     )
                 }
@@ -386,7 +440,7 @@ class Run(
          * Resolve the final value for the readRate and deleteRate, then check their sum. Note that the readRate is supplied
          * by the profile when the commandline option is unspecified.
          */
-        val tmpReadRate = readRate ?: plugin.instance.getDefaultReadRate()
+        val tmpReadRate = readRate ?: workload.instance.getDefaultReadRate()
         val tmpDeleteRate = deleteRate ?: 0.0
 
         if ((tmpReadRate + tmpDeleteRate) > 1.0) {
@@ -399,18 +453,19 @@ class Run(
 
         val rateLimiter = getRateLimiter()
 
-        plugin.applyDynamicSettings(workloadParameters)
+        workload.applyDynamicSettings(workloadParameters)
 
-        createSchema(plugin)
+        createSchema(workload)
         executeAdditionalCQL()
 
-        val fieldRegistry = createFieldRegistry(plugin)
+        val fieldRegistry = createFieldRegistry(workload)
 
         println("Preparing queries")
-        plugin.instance.prepare(session)
+        workload.instance.prepare(session)
 
         // Both of the following are set in the try block, so this is OK
         val metrics = createMetrics()
+        currentMetrics = metrics // Store for external access
 
         // set up the rate limiter optimizer and put it on a schedule
         val optimizer =
@@ -434,9 +489,9 @@ class Run(
 
         try {
             // run the prepare for each
-            val runners = createRunners(plugin, context)
+            val runners = createRunners(workload, context)
 
-            populateData(plugin, runners, metrics)
+            populateData(workload, runners, metrics)
             metrics.resetErrors()
             metrics.resetThroughputTrackers()
 
@@ -480,7 +535,10 @@ class Run(
             // we need to be able to run multiple tests in the same JVM
             // without this cleanup we could have the metrics runner still running and it will cause subsequent tests to fail
             metrics.shutdown()
+            currentMetrics = null // Clear reference when done
             collector.close(context)
+            session.close()
+
             Thread.sleep(1000)
 
             println("Stress complete, $runnersExecuted.")
@@ -516,13 +574,13 @@ class Run(
      * partition space with initial values.
      */
     private fun populateData(
-        plugin: Plugin,
-        runners: List<ProfileRunner>,
+        workload: Workload,
+        runners: List<WorkloadRunner>,
         metrics: Metrics,
     ) {
         // The --populate flag can be overridden by the profile
 
-        val option = plugin.instance.getPopulateOption(this)
+        val option = workload.instance.getPopulateOption(this)
         var deletes = true
 
         val max =
@@ -576,15 +634,15 @@ class Run(
     }
 
     private fun createRunners(
-        plugin: Plugin,
+        workload: Workload,
         sharedContext: Context,
-    ): List<ProfileRunner> {
+    ): List<WorkloadRunner> {
         val runners =
             IntRange(0, threads - 1).map {
                 // println("Connecting")
                 println("Connecting to Cassandra cluster ...")
                 val context = sharedContext.stress(it)
-                ProfileRunner.create(context, plugin.instance)
+                WorkloadRunner.create(context, workload.instance)
             }
 
         val executed =
@@ -613,10 +671,10 @@ class Run(
         return Metrics(registry, reporters, prometheusPort)
     }
 
-    private fun createFieldRegistry(plugin: Plugin): Registry {
+    private fun createFieldRegistry(workload: Workload): Registry {
         val fieldRegistry = Registry.create()
 
-        for ((field, generator) in plugin.instance.getFieldGenerators()) {
+        for ((field, generator) in workload.instance.getFieldGenerators()) {
             log.info("Defaulting $field to $generator")
             fieldRegistry.setDefault(field, generator)
         }
@@ -668,12 +726,12 @@ class Run(
         }
     }
 
-    fun createSchema(plugin: Plugin) {
+    fun createSchema(workload: Workload) {
         println("Creating Tables")
 
         if (noSchema) return
 
-        for (statement in plugin.instance.schema()) {
+        for (statement in workload.instance.schema()) {
             val s =
                 SchemaBuilder
                     .create(statement)

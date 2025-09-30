@@ -39,6 +39,10 @@ class Metrics(val metricRegistry: MetricRegistry, val reporters: List<ScheduledR
         for (reporter in reporters) {
             reporter.stop()
         }
+        selectThroughputTracker.stop()
+        mutationThroughputTracker.stop()
+        deletionThroughputTracker.stop()
+        populateThroughputTracker.stop()
     }
 
     fun resetErrors() {

@@ -24,6 +24,7 @@ import org.apache.cassandra.easystress.commands.IStressCommand
 import org.apache.cassandra.easystress.commands.Info
 import org.apache.cassandra.easystress.commands.ListCommand
 import org.apache.cassandra.easystress.commands.Run
+import org.apache.cassandra.easystress.commands.Server
 
 class MainArgs {
     @Parameter(names = ["--help", "-h"], description = "Shows this help.")
@@ -50,6 +51,7 @@ class CommandLineParser(
                     "info" to Info(),
                     "list" to ListCommand(),
                     "fields" to Fields(),
+                    "server" to Server(),
                 )
 
             for (x in commands.entries) {

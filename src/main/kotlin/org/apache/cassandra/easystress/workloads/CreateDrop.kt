@@ -38,7 +38,7 @@ import kotlin.concurrent.schedule
  * Most useful when paired with another workload, to determine if
  * impact of schema operations on running workloads.
  */
-class CreateDrop : IStressProfile {
+class CreateDrop : IStressWorkload {
     @WorkloadParameter("Number of fields in each table.")
     var fields = 1
 

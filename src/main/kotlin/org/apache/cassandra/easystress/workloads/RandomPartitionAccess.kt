@@ -28,7 +28,7 @@ import org.apache.cassandra.easystress.generators.FieldGenerator
 import org.apache.cassandra.easystress.generators.functions.Random
 import java.util.concurrent.ThreadLocalRandom
 
-class RandomPartitionAccess : IStressProfile {
+class RandomPartitionAccess : IStressWorkload {
     @WorkloadParameter(description = "Number of rows per partition, defaults to 100")
     var rows = 100
 

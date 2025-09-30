@@ -1,12 +1,12 @@
 package org.apache.cassandra.easystress.collector
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet
+import io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueue
+import org.agrona.concurrent.BackoffIdleStrategy
 import org.apache.cassandra.easystress.Context
 import org.apache.cassandra.easystress.Either
 import org.apache.cassandra.easystress.StressContext
 import org.apache.cassandra.easystress.workloads.Operation
-import io.netty.util.internal.shaded.org.jctools.queues.MpscArrayQueue
-import org.agrona.concurrent.BackoffIdleStrategy
 import java.io.Closeable
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger

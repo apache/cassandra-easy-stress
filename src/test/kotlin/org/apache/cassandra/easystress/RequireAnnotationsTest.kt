@@ -22,122 +22,122 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 class RequireAnnotationsTest {
-    private lateinit var allPlugins: Map<String, Plugin>
+    private lateinit var allWorkloads: Map<String, Workload>
 
     @BeforeEach
     fun setup() {
-        allPlugins = Plugin.getPlugins()
+        allWorkloads = Workload.getWorkloads()
     }
 
     @Test
-    fun testGetPluginsForTestingFiltersCorrectly() {
-        val testingPlugins = Plugin.getPluginsForTesting()
+    fun testGetWorkloadsForTestingFiltersCorrectly() {
+        val testingWorkloads = Workload.getWorkloadsForTesting()
 
         assertThat(System.getenv("TEST_DSE")).isNull()
         assertThat(System.getenv("TEST_MVS")).isNull()
 
-        // Verify DSESearch, MaterializedViews, TxnCounter exist in all plugins
-        assertThat(allPlugins).containsKey("DSESearch")
-        assertThat(allPlugins).containsKey("MaterializedViews")
-        assertThat(allPlugins).containsKey("TxnCounter")
+        // Verify DSESearch, MaterializedViews, TxnCounter exist in all workloads
+        assertThat(allWorkloads).containsKey("DSESearch")
+        assertThat(allWorkloads).containsKey("MaterializedViews")
+        assertThat(allWorkloads).containsKey("TxnCounter")
 
-        assertThat(testingPlugins).doesNotContainKey("MaterializedViews")
-        assertThat(testingPlugins).doesNotContainKey("DSESearch")
-        assertThat(testingPlugins).doesNotContainKey("TxnCounter")
+        assertThat(testingWorkloads).doesNotContainKey("MaterializedViews")
+        assertThat(testingWorkloads).doesNotContainKey("DSESearch")
+        assertThat(testingWorkloads).doesNotContainKey("TxnCounter")
     }
 
     @Test
-    fun testDSEPluginFilteredWithoutEnvVar() {
+    fun testDSEWorkloadsFilteredWithoutEnvVar() {
         // Test with empty environment
         val emptyEnv = emptyMap<String, String>()
-        val testingPlugins = Plugin.getPluginsForTesting(emptyEnv)
+        val testingWorkloads = Workload.getWorkloadsForTesting(emptyEnv)
 
         // DSESearch should be filtered out
-        assertThat(testingPlugins).doesNotContainKey("DSESearch")
+        assertThat(testingWorkloads).doesNotContainKey("DSESearch")
 
-        // Other non-annotated plugins should still be present
-        assertThat(testingPlugins).containsKey("BasicTimeSeries")
-        assertThat(testingPlugins).containsKey("KeyValue")
+        // Other non-annotated workloads should still be present
+        assertThat(testingWorkloads).containsKey("BasicTimeSeries")
+        assertThat(testingWorkloads).containsKey("KeyValue")
     }
 
     @Test
-    fun testDSEPluginIncludedWithEnvVar() {
+    fun testDSEWorkloadIncludedWithEnvVar() {
         // Test with TEST_DSE set
         val envWithDSE = mapOf("TEST_DSE" to "1")
-        val testingPlugins = Plugin.getPluginsForTesting(envWithDSE)
+        val testingWorkloads = Workload.getWorkloadsForTesting(envWithDSE)
 
         // DSESearch should be included
-        assertThat(testingPlugins).containsKey("DSESearch")
+        assertThat(testingWorkloads).containsKey("DSESearch")
 
         // But MaterializedViews and TxnCounter should still be filtered out
-        assertThat(testingPlugins).doesNotContainKey("MaterializedViews")
-        assertThat(testingPlugins).doesNotContainKey("TxnCounter")
+        assertThat(testingWorkloads).doesNotContainKey("MaterializedViews")
+        assertThat(testingWorkloads).doesNotContainKey("TxnCounter")
     }
 
     @Test
-    fun testMVsPluginFilteredWithoutEnvVar() {
+    fun testMVsWorkloadFilteredWithoutEnvVar() {
         // Test with empty environment
         val emptyEnv = emptyMap<String, String>()
-        val testingPlugins = Plugin.getPluginsForTesting(emptyEnv)
+        val testingWorkloads = Workload.getWorkloadsForTesting(emptyEnv)
 
         // MaterializedViews should be filtered out
-        assertThat(testingPlugins).doesNotContainKey("MaterializedViews")
+        assertThat(testingWorkloads).doesNotContainKey("MaterializedViews")
 
-        // Other non-annotated plugins should still be present
-        assertThat(testingPlugins).containsKey("BasicTimeSeries")
-        assertThat(testingPlugins).containsKey("KeyValue")
+        // Other non-annotated workloads should still be present
+        assertThat(testingWorkloads).containsKey("BasicTimeSeries")
+        assertThat(testingWorkloads).containsKey("KeyValue")
     }
 
     @Test
-    fun testMVsPluginIncludedWithEnvVar() {
+    fun testMVsWorkloadIncludedWithEnvVar() {
         // Test with TEST_MVS set
         val envWithMVs = mapOf("TEST_MVS" to "1")
-        val testingPlugins = Plugin.getPluginsForTesting(envWithMVs)
+        val workloads = Workload.getWorkloadsForTesting(envWithMVs)
 
         // MaterializedViews should be included
-        assertThat(testingPlugins).containsKey("MaterializedViews")
+        assertThat(workloads).containsKey("MaterializedViews")
 
         // But DSESearch and TxnCounter should still be filtered out
-        assertThat(testingPlugins).doesNotContainKey("DSESearch")
-        assertThat(testingPlugins).doesNotContainKey("TxnCounter")
+        assertThat(workloads).doesNotContainKey("DSESearch")
+        assertThat(workloads).doesNotContainKey("TxnCounter")
     }
 
     @Test
-    fun testAccordPluginFilteredWithoutEnvVar() {
+    fun testAccordWorkloadFilteredWithoutEnvVar() {
         // Test with empty environment
         val emptyEnv = emptyMap<String, String>()
-        val testingPlugins = Plugin.getPluginsForTesting(emptyEnv)
+        val workloads = Workload.getWorkloadsForTesting(emptyEnv)
 
         // TxnCounter should be filtered out
-        assertThat(testingPlugins).doesNotContainKey("TxnCounter")
+        assertThat(workloads).doesNotContainKey("TxnCounter")
 
-        // Other non-annotated plugins should still be present
-        assertThat(testingPlugins).containsKey("BasicTimeSeries")
-        assertThat(testingPlugins).containsKey("KeyValue")
+        // Other non-annotated workloads should still be present
+        assertThat(workloads).containsKey("BasicTimeSeries")
+        assertThat(workloads).containsKey("KeyValue")
     }
 
     @Test
-    fun testAccordPluginIncludedWithEnvVar() {
+    fun testAccordWorkloadIncludedWithEnvVar() {
         // Test with TEST_ACCORD set to "1"
         val envWithAccord = mapOf("TEST_ACCORD" to "1")
-        val testingPlugins = Plugin.getPluginsForTesting(envWithAccord)
+        val workloads = Workload.getWorkloadsForTesting(envWithAccord)
 
         // TxnCounter should be included
-        assertThat(testingPlugins).containsKey("TxnCounter")
+        assertThat(workloads).containsKey("TxnCounter")
 
         // But DSESearch and MaterializedViews should still be filtered out
-        assertThat(testingPlugins).doesNotContainKey("DSESearch")
-        assertThat(testingPlugins).doesNotContainKey("MaterializedViews")
+        assertThat(workloads).doesNotContainKey("DSESearch")
+        assertThat(workloads).doesNotContainKey("MaterializedViews")
     }
 
     @Test
     fun testAccordRequiresSpecificValue() {
         // Test that TEST_ACCORD requires value "1", not just any value
         val envWithWrongAccord = mapOf("TEST_ACCORD" to "true")
-        val testingPlugins = Plugin.getPluginsForTesting(envWithWrongAccord)
+        val workloads = Workload.getWorkloadsForTesting(envWithWrongAccord)
 
         // TxnCounter should be filtered out because TEST_ACCORD != "1"
-        assertThat(testingPlugins).doesNotContainKey("TxnCounter")
+        assertThat(workloads).doesNotContainKey("TxnCounter")
     }
 
     @Test
@@ -149,32 +149,32 @@ class RequireAnnotationsTest {
                 "TEST_MVS" to "1",
                 "TEST_ACCORD" to "1",
             )
-        val testingPlugins = Plugin.getPluginsForTesting(envWithAll)
+        val workloads = Workload.getWorkloadsForTesting(envWithAll)
 
-        // All annotated plugins should be included
-        assertThat(testingPlugins).containsKey("DSESearch")
-        assertThat(testingPlugins).containsKey("MaterializedViews")
-        assertThat(testingPlugins).containsKey("TxnCounter")
+        // All annotated workloads should be included
+        assertThat(workloads).containsKey("DSESearch")
+        assertThat(workloads).containsKey("MaterializedViews")
+        assertThat(workloads).containsKey("TxnCounter")
 
-        // And all other plugins should still be present
-        assertThat(testingPlugins).containsKey("BasicTimeSeries")
-        assertThat(testingPlugins).containsKey("KeyValue")
+        // And all other workloads should still be present
+        assertThat(workloads).containsKey("BasicTimeSeries")
+        assertThat(workloads).containsKey("KeyValue")
     }
 
     @Test
-    fun testPluginAnnotations() {
-        // Verify the correct annotations are present on the plugins
-        val dsePlugin = allPlugins["DSESearch"]
-        val mvPlugin = allPlugins["MaterializedViews"]
-        val txnPlugin = allPlugins["TxnCounter"]
+    fun testWorkloadAnnotations() {
+        // Verify the correct annotations are present on the workloads
+        val dseWorkload = allWorkloads["DSESearch"]
+        val mvWorkload = allWorkloads["MaterializedViews"]
+        val txnWorkload = allWorkloads["TxnCounter"]
 
-        assertThat(dsePlugin).isNotNull
-        assertThat(dsePlugin!!.cls.isAnnotationPresent(RequireDSE::class.java)).isTrue
+        assertThat(dseWorkload).isNotNull
+        assertThat(dseWorkload!!.cls.isAnnotationPresent(RequireDSE::class.java)).isTrue
 
-        assertThat(mvPlugin).isNotNull
-        assertThat(mvPlugin!!.cls.isAnnotationPresent(RequireMVs::class.java)).isTrue
+        assertThat(mvWorkload).isNotNull
+        assertThat(mvWorkload!!.cls.isAnnotationPresent(RequireMVs::class.java)).isTrue
 
-        assertThat(txnPlugin).isNotNull
-        assertThat(txnPlugin!!.cls.isAnnotationPresent(RequireAccord::class.java)).isTrue
+        assertThat(txnWorkload).isNotNull
+        assertThat(txnWorkload!!.cls.isAnnotationPresent(RequireAccord::class.java)).isTrue
     }
 }
