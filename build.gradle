@@ -34,8 +34,6 @@ apply plugin: 'application'
 
 group 'org.apache.cassandra'
 
-sourceCompatibility = 11
-
 application {
     applicationName = "cassandra-easy-stress"
     mainClassName = "org.apache.cassandra.easystress.MainKt"
@@ -126,6 +124,32 @@ task generateExamples(type: Exec) {
     description = "Generate examples for documentation"
 }
 
+task dockerBuild(type: Exec) {
+    group = "build"
+    description = "Build docker image via buildx with optional registry and buildx overrides"
+
+    // Allow overriding via command line: -PdockerRegistry=ghcr.io -PdockerBuildxOptions="--platform linux/amd64"
+    def registry = (project.findProperty("dockerRegistry") ?: "ghcr.io")
+    def repository = (project.findProperty("dockerRepository") ?: "apache/${application.applicationName}")
+
+    def versionTag = (project.version?.toString() ?: "")
+    if (!versionTag || versionTag.length() < 1) {
+        versionTag = "latest"
+    }
+
+    def image = "${registry}/${repository}:${versionTag}"
+    def buildxOptions = (project.findProperty("dockerBuildxOptions") ?: "")
+
+    def command = ["docker", "buildx", "build", "--build-arg", "VERSION=${versionTag}", "-t", image]
+    if (!buildxOptions.isEmpty()) {
+        command.addAll(buildxOptions.split("\\s+"))
+    }
+    command.add(".")
+    command.add("--load")
+
+    commandLine command
+}
+
 jib {
     to {
         image = "rustyrazorblade/cassandra-easy-stress"
@@ -177,7 +201,11 @@ applicationDistribution.from("LICENSE.txt") {
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
-targetCompatibility = JavaVersion.VERSION_11
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
 
 detekt {
     toolVersion = "1.23.7"
