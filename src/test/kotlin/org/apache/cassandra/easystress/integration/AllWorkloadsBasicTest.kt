@@ -17,31 +17,31 @@
  */
 package org.apache.cassandra.easystress.integration
 
-import org.apache.cassandra.easystress.Plugin
+import org.apache.cassandra.easystress.Workload
 import org.apache.cassandra.easystress.commands.Run
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 
 @Retention(AnnotationRetention.RUNTIME)
-@MethodSource("getPlugins")
-annotation class AllPlugins
+@MethodSource("getWorkloads")
+annotation class AllWorkloads
 
 /**
- * This test grabs every plugin and ensures it can run against localhost
+ * This test grabs every workload and ensures it can run against localhost
  * Next step is to start up a docker container with Cassandra
  * Baby steps.
  */
-class AllPluginsBasicTest : CassandraTestBase() {
+class AllWorkloadsBasicTest : CassandraTestBase() {
     lateinit var run: Run
 
     /**
-     * Annotate a test with @AllPlugins
+     * Annotate a test with @AllWorkloads
      */
     companion object {
         @JvmStatic
-        fun getPlugins() =
-            Plugin.getPluginsForTesting().values.filter {
+        fun getWorkloads() =
+            Workload.getWorkloadsForTesting().values.filter {
                 it.name != "Demo"
             }
     }
@@ -56,15 +56,15 @@ class AllPluginsBasicTest : CassandraTestBase() {
      * This test is configured to run against a local instance
      * using the datacenter name from our base class.
      */
-    @AllPlugins
+    @AllWorkloads
     @ParameterizedTest(name = "run test {0}")
-    fun runEachTest(plugin: Plugin) {
+    fun runEachTest(workload: Workload) {
         run.apply {
             host = ip
-            profile = plugin.name
-            iterations = 200
+            this.workload = workload.name
+            duration = 10
             rate = 50L
-            partitionValues = 1000
+            partitionCount = 1000
             prometheusPort = 0
             threads = 2
             useOptimizer = false

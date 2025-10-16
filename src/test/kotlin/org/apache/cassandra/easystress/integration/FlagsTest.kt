@@ -32,7 +32,7 @@ class FlagsTest : CassandraTestBase() {
         cleanupKeyspace()
         keyvalue =
             Run("placeholder").apply {
-                profile = "KeyValue"
+                workload = "KeyValue"
                 iterations = 100
                 host = ip
                 dc = localDc

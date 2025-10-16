@@ -31,7 +31,7 @@ import org.apache.cassandra.easystress.generators.functions.USCities
 import java.util.concurrent.ThreadLocalRandom
 
 @RequireMVs
-class MaterializedViews : IStressProfile {
+class MaterializedViews : IStressWorkload {
     override fun prepare(session: CqlSession) {
         insert = session.prepare("INSERT INTO person (name, age, city) values (?, ?, ?)")
         selectBase = session.prepare("SELECT * FROM person WHERE name = ?")

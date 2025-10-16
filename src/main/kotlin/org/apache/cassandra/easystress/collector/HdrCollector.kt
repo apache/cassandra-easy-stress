@@ -1,11 +1,11 @@
 package org.apache.cassandra.easystress.collector
 
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet
+import org.HdrHistogram.SynchronizedHistogram
 import org.apache.cassandra.easystress.Context
 import org.apache.cassandra.easystress.Either
 import org.apache.cassandra.easystress.StressContext
 import org.apache.cassandra.easystress.workloads.Operation
-import org.HdrHistogram.SynchronizedHistogram
 import java.io.File
 import java.io.PrintStream
 

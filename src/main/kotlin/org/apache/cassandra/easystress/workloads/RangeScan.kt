@@ -29,7 +29,7 @@ import org.apache.logging.log4j.kotlin.logger
  * this is a bit of an oddball workout because it doesn't support writes.
  */
 
-class RangeScan : IStressProfile {
+class RangeScan : IStressWorkload {
     private lateinit var ranges: List<TokenRange>
 
     @WorkloadParameter("Table to perform full scan against.  Does not support writes of any kind.")

@@ -107,3 +107,27 @@ To run all tests including DSE, Materialized Views, and Accord workloads:
     TEST_DSE=1 TEST_MVS=1 TEST_ACCORD=1 ./gradlew test
 
 Make sure you have the appropriate Cassandra configuration and features enabled before running these specialized tests.
+
+# MCP Server Integration
+
+cassandra-easy-stress includes a Model Context Protocol (MCP) server that allows AI assistants to interact with the stress testing tool.
+
+## Testing with Claude Code
+
+To test the MCP server integration with Claude Code:
+
+1. Add the MCP server (assuming it's running locally):
+   ```bash
+   claude mcp add -t sse cassandra-easy-stress http://localhost:9000/sse
+   ```
+
+2. Run the MCP integration test prompt:
+   ```bash
+   /test-mcp
+   ```
+
+This will verify that the MCP server is properly configured and accessible from Claude Code.
+
+## Other MCP-Compatible Tools
+
+The MCP server should work with any tool that supports the Model Context Protocol. If you've successfully integrated cassandra-easy-stress with another MCP-compatible tool, please send a PR with instructions and we'll update this README.

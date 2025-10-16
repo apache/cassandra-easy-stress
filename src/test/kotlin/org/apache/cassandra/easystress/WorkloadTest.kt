@@ -19,24 +19,24 @@ package org.apache.cassandra.easystress
 
 import com.datastax.oss.driver.api.core.CqlSession
 import com.datastax.oss.driver.api.core.cql.BoundStatement
-import org.apache.cassandra.easystress.workloads.IStressProfile
-import org.apache.cassandra.easystress.workloads.IStressRunner
-import org.apache.cassandra.easystress.workloads.Operation
 import io.mockk.mockk
+import org.apache.cassandra.easystress.workloads.IStressRunner
+import org.apache.cassandra.easystress.workloads.IStressWorkload
+import org.apache.cassandra.easystress.workloads.Operation
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-internal class PluginTest {
-    lateinit var plugin: Plugin
+internal class WorkloadTest {
+    lateinit var workload: Workload
 
     @BeforeEach
-    fun setPlugin() {
-        plugin = Plugin.getPlugins()["Demo"]!!
+    fun setWorkload() {
+        workload = Workload.getWorkloads()["Demo"]!!
     }
 
-    class Demo : IStressProfile {
+    class Demo : IStressWorkload {
         @WorkloadParameter("Number of rows for each")
         var rows: Int = 100
 
@@ -70,10 +70,10 @@ internal class PluginTest {
     }
 
     // simple test, but ¯\_(ツ)_/¯
-    // we should have at least 2 plugins
+    // we should have at least 2 workloads
     @Test
-    fun testGetPlugins() {
-        val tmp = Plugin.getPlugins()
+    fun testGetWorkloads() {
+        val tmp = Workload.getWorkloads()
         assertThat(tmp.count()).isGreaterThan(1)
     }
 
@@ -85,9 +85,9 @@ internal class PluginTest {
                 "name" to "Anthony",
             )
 
-        plugin.applyDynamicSettings(fields)
+        workload.applyDynamicSettings(fields)
 
-        val instance = plugin.instance as Demo
+        val instance = workload.instance as Demo
 
         assertThat(instance.rows).isEqualTo(10)
         assertThat(instance.name).isEqualTo("Anthony")
@@ -95,20 +95,20 @@ internal class PluginTest {
 
     @Test
     fun testGetProperty() {
-        val prop = plugin.getProperty("name")
+        val prop = workload.getProperty("name")
         assertThat(prop.name).isEqualTo("name")
     }
 
     @Test
     fun testGetNonexistentPropertyThrowsException() {
         assertThatExceptionOfType(NoSuchElementException::class.java).isThrownBy {
-            plugin.getProperty("NOT_A_REAL_PROPERTY_OH_NOES")
+            workload.getProperty("NOT_A_REAL_PROPERTY_OH_NOES")
         }
     }
 
     @Test
     fun testGetCustomParams() {
-        val params = plugin.getCustomParams()
+        val params = workload.getCustomParams()
         println(params)
     }
 }

@@ -18,15 +18,15 @@
 package org.apache.cassandra.easystress.commands
 
 import com.beust.jcommander.Parameters
-import org.apache.cassandra.easystress.Plugin
+import org.apache.cassandra.easystress.Workload
 
 @Parameters(commandDescription = "List all workloads.")
 class ListCommand : IStressCommand {
     override fun execute() {
         println("Available Workloads:\n")
 
-        val plugins = Plugin.getPlugins()
-        for ((key, _) in plugins) {
+        val workloads = Workload.getWorkloads()
+        for ((key, _) in workloads) {
             println("$key ")
         }
         println("\nYou can run any of these workloads by running cassandra-easy-stress run WORKLOAD.")

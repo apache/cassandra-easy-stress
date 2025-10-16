@@ -20,4 +20,6 @@
 - Use null safety operators and when expressions for type checking
 - String templates for string interpolation
 - Include proper exception handling with logging
-- JUnit 5 and AssertJ for tests
+- JUnit 5 and AssertJ for tests.  Write tests using assertj assertions.
+- Do not use runBlocking for tests, they cause issues with junit.  Use `kotlinx.coroutines.test.runTest` instead.
+- Do not test simple configuration parsing.

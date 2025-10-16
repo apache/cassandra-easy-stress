@@ -48,6 +48,6 @@ class HumanReadableTimeConverter : IStringConverter<Long> {
             throw IllegalArgumentException("Value $value resulted in 0 time duration")
         }
 
-        return duration.toMinutes()
+        return duration.toSeconds()
     }
 }

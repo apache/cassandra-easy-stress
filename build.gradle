@@ -19,11 +19,13 @@
 plugins {
     alias(libs.plugins.jib)
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.nebula.ospackage)
     alias(libs.plugins.nebula.ospackage.application)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.detekt)
     alias(libs.plugins.shadow)
+    alias(libs.plugins.kover)
 }
 
 
@@ -60,6 +62,7 @@ dependencies {
     implementation libs.log4j.api
     implementation libs.log4j.core
     implementation libs.log4j.api.kotlin
+    implementation libs.kotlin.reflect
     // maps the datastax driver slf4j calls to log4j
     implementation libs.log4j.slf4j18.impl
 
@@ -84,12 +87,33 @@ dependencies {
     implementation libs.hadoop.common
     implementation libs.hadoop.mapreduce.client.common
 
+    // MCP Server dependencies
+    implementation (libs.mcp.sdk) {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    implementation (libs.ktor.server.core) {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    implementation (libs.ktor.server.cio) {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    implementation (libs.ktor.server.content.negotiation) {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    implementation (libs.ktor.serialization.kotlinx.json) {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+    implementation (libs.ktor.server.sse) {
+        exclude group: 'org.slf4j', module: 'slf4j-api'
+    }
+
     // Test dependencies
     testImplementation libs.junit.jupiter.engine
     testImplementation libs.junit.jupiter.params
     testImplementation libs.assertj.core
     testImplementation libs.kotlin.test.junit
     testImplementation libs.mockk
+    testImplementation libs.kotlinx.coroutines.test
 
 }
 

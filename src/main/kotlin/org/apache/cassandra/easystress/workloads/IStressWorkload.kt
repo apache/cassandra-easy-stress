@@ -64,7 +64,7 @@ interface IStressRunner {
  * statements, and queries that will be executed.  It should be fairly trivial
  * to imp
  */
-interface IStressProfile {
+interface IStressWorkload {
     /**
      * Handles any prepared statements that are needed
      * the class should track all prepared statements internally

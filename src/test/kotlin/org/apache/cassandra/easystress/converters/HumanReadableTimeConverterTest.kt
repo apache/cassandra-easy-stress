@@ -32,14 +32,14 @@ internal class HumanReadableTimeConverterTest {
 
     @Test
     fun convert() {
-        assertThat(converter.convert("15m")).isEqualTo(15)
-        assertThat(converter.convert("1h")).isEqualTo(60)
-        assertThat(converter.convert("3h")).isEqualTo(180)
-        assertThat(converter.convert("1d 1h")).isEqualTo(1500)
-        assertThat(converter.convert("1h 5m")).isEqualTo(65)
-        assertThat(converter.convert("3m 120s")).isEqualTo(5)
-        assertThat(converter.convert("10m 1d 59s 2h")).isEqualTo(1570)
-        assertThat(converter.convert("1d2h3m")).isEqualTo(1563)
+        assertThat(converter.convert("15m")).isEqualTo(900) // 15 * 60 = 900 seconds
+        assertThat(converter.convert("1h")).isEqualTo(3600) // 60 * 60 = 3600 seconds
+        assertThat(converter.convert("3h")).isEqualTo(10800) // 3 * 60 * 60 = 10800 seconds
+        assertThat(converter.convert("1d 1h")).isEqualTo(90000) // (24 * 60 * 60) + (60 * 60) = 90000 seconds
+        assertThat(converter.convert("1h 5m")).isEqualTo(3900) // (60 * 60) + (5 * 60) = 3900 seconds
+        assertThat(converter.convert("3m 120s")).isEqualTo(300) // (3 * 60) + 120 = 300 seconds
+        assertThat(converter.convert("10m 1d 59s 2h")).isEqualTo(94259) // (10 * 60) + (24 * 60 * 60) + 59 + (2 * 60 * 60) = 94259 seconds
+        assertThat(converter.convert("1d2h3m")).isEqualTo(93780) // (24 * 60 * 60) + (2 * 60 * 60) + (3 * 60) = 93780 seconds
     }
 
     @Test
