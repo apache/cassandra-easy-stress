@@ -26,6 +26,27 @@ Use the shell script wrapper to start and get help:
 
     bin/cassandra-easy-stress -h
 
+## Build Docker image
+
+To build the Docker image, one can use a wrapper in the Gradle or build it directly. To build with Gradle:
+
+    ./gradlew dockerBuild
+
+The Gradle command accepts the following project parameters:
+
+    version
+    dockerRegistry
+    dockerRepository
+    dockerBuildxOptions
+
+For example, building dev version with linux/amd64 as target platform:
+
+    ./gradlew dockerBuild -Pversion=10-dev -PdockerRegistry=docker.io -PdockerRepository=michaelburman290/cassandra-easy-stress -PdockerBuildxOptions="--platform linux/amd64"
+
+The Docker image is self contained and allows to build the cassandra-easy-stress without using Gradle. In that case, simply invoking docker buildx is enough:
+
+    docker buildx build --platform linux/amd64 -f Dockerfile . -t apache/cassandra-easy-stress:10-dev
+
 # Examples
 
 Time series workload with a billion operations:
@@ -50,6 +71,45 @@ Time series workload with Cassandra Authentication enabled:
     bin/cassandra-easy-stress run BasicTimeSeries -d '30m' -U '<username>' -P '<password>'
     **Note**: The quotes are mandatory around the username/password
     if they contain special chararacters, which is pretty common for password
+
+## Kubernetes
+
+To run example time series workload test with billion operations against cluster listening at svc `cluster1-dc1-all-pods-service`:
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cassandra-easy-stress
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      restartPolicy: Never
+      containers:
+        - name: cassandra-easy-stress
+          image: ghcr.io/apache/cassandra-easy-stress:latest
+          args:
+            - run
+            - BasicTimeSeries
+            - -i
+            - 1B
+            - --host
+            - cluster1-dc1-all-pods-service
+          securityContext:
+            runAsNonRoot: true
+            runAsGroup: 65534
+            runAsUser: 65534
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - "ALL"
+```
 
 # Generating docs
 
