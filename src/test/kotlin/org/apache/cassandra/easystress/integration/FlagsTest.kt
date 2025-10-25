@@ -35,6 +35,7 @@ class FlagsTest : CassandraTestBase() {
                 workload = "KeyValue"
                 iterations = 100
                 host = ip
+                cqlPort = port
                 dc = localDc
                 useOptimizer = false
                 prometheusPort = 0

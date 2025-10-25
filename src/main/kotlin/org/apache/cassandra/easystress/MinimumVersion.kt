@@ -18,10 +18,12 @@
 package org.apache.cassandra.easystress
 
 /**
- * Marks a workload as requiring Materialized Views.
- * Tests for workloads annotated with this will be skipped by default
- * unless the TEST_MVS environment variable is set.
+ * Marks a workload as requiring a minimum Cassandra version.
+ * Tests for workloads annotated with this will be skipped if the
+ * current CASSANDRA_VERSION is less than the specified minimum.
+ *
+ * @property version The minimum required version (e.g., "5.0", "5.1")
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class RequireMVs
+annotation class MinimumVersion(val version: String)

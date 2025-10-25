@@ -52,6 +52,40 @@ data class Workload(
     companion object {
         val log = logger()
 
+        /**
+         * Parses a Cassandra version string into a comparable pair of (major, minor).
+         * Examples: "5.0" -> (5, 0), "4.1" -> (4, 1), "trunk" -> (99, 99)
+         */
+        private fun parseVersion(version: String): Pair<Int, Int> {
+            return when {
+                version == "trunk" || version == "latest" -> Pair(99, 99)
+                else -> {
+                    val parts = version.split(".")
+                    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+                    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                    Pair(major, minor)
+                }
+            }
+        }
+
+        /**
+         * Compares two version strings.
+         * @return true if currentVersion >= minimumVersion
+         */
+        private fun meetsMinimumVersion(
+            currentVersion: String,
+            minimumVersion: String,
+        ): Boolean {
+            val (currentMajor, currentMinor) = parseVersion(currentVersion)
+            val (minMajor, minMinor) = parseVersion(minimumVersion)
+
+            return when {
+                currentMajor > minMajor -> true
+                currentMajor < minMajor -> false
+                else -> currentMinor >= minMinor
+            }
+        }
+
         fun getWorkloads(): Map<String, Workload> {
             val r = Reflections("org.apache.cassandra.easystress")
             val modules = r.getSubTypesOf(IStressWorkload::class.java)
@@ -75,21 +109,31 @@ data class Workload(
         fun getWorkloadsForTesting(envVars: Map<String, String> = System.getenv()): Map<String, Workload> {
             val allWorkloads = getWorkloads()
             val testDSE = envVars["TEST_DSE"] == "1"
-            val testMVs = envVars["TEST_MVS"] == "1"
             val testAccord = envVars["TEST_ACCORD"] == "1"
+            val cassandraVersion = envVars["CASSANDRA_VERSION"] ?: "5.0"
 
             return allWorkloads.filterValues { workload ->
-                // Check if the workload class has @RequireDSE, @RequireMVs, or @RequireAccord annotations
+                // Check if the workload class has @RequireDSE or @RequireAccord annotations
                 val requiresDSE = workload.cls.isAnnotationPresent(RequireDSE::class.java)
-                val requiresMVs = workload.cls.isAnnotationPresent(RequireMVs::class.java)
                 val requiresAccord = workload.cls.isAnnotationPresent(RequireAccord::class.java)
 
+                // Check if the workload requires a minimum version
+                val minimumVersionAnnotation = workload.cls.getAnnotation(MinimumVersion::class.java)
+                val meetsVersionRequirement =
+                    if (minimumVersionAnnotation != null) {
+                        meetsMinimumVersion(cassandraVersion, minimumVersionAnnotation.version)
+                    } else {
+                        true
+                    }
+
                 // Include the workload if:
-                // - It doesn't require DSE, MVs, or Accord, OR
+                // - It doesn't require DSE or Accord, OR
                 // - It requires DSE AND TEST_DSE is set, OR
-                // - It requires MVs AND TEST_MVS is set, OR
                 // - It requires Accord AND TEST_ACCORD is set to "1"
-                (!requiresDSE || testDSE) && (!requiresMVs || testMVs) && (!requiresAccord || testAccord)
+                // AND
+                // - It meets the minimum version requirement
+                meetsVersionRequirement &&
+                    (!requiresDSE || testDSE) && (!requiresAccord || testAccord)
             }
         }
     }

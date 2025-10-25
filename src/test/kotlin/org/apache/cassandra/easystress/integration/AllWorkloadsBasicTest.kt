@@ -61,6 +61,7 @@ class AllWorkloadsBasicTest : CassandraTestBase() {
     fun runEachTest(workload: Workload) {
         run.apply {
             host = ip
+            cqlPort = port
             this.workload = workload.name
             duration = 10
             rate = 50L

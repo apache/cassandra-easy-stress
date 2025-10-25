@@ -1,10 +1,12 @@
-# cassandra-easy-stress: A workload centric stress tool and framework designed for ease of use.
+# cassandra-easy-stress
 
-This project is a work in progress.
+## A workload centric stress tool and framework designed for ease of use.
 
-cassandra-easy-stress is a configuration-based tool for doing benchmarks and testing simple data models for Apache Cassandra. 
-Unfortunately, it can be challenging to configure a workload. There are fairly common data models and workloads seen on Apache Cassandra.  
-This tool aims to provide a means of executing configurable, pre-defined profiles.
+[![CI](https://github.com/apache/cassandra-easy-stress/actions/workflows/ci.yml/badge.svg)](https://github.com/apache/cassandra-easy-stress/actions/workflows/ci.yml)
+
+cassandra-easy-stress is a powerful and flexible tool for performing benchmarks and testing data models for Apache Cassandra.
+
+Most benchmarking tools require learning complex configuration systems before you can run your first test. cassandra-easy-stress provides pre-built workloads for common Cassandra patterns. Modify these workloads with flexible parameters to match your environment, or write custom workloads in Kotlin when you need full control.
 
 Full docs are here: https://apache.github.io/cassandra-easy-stress/
 
@@ -57,60 +59,275 @@ Docs are served out of /docs and can be rebuild using `./gradlew docs`.
 
 # Testing
 
-## Running Tests
+## Quick Start
 
-To run the test suite:
+Run all tests against the default version (Cassandra 5.0):
 
-    ./gradlew test
+```bash
+./gradlew test
+```
 
-## Special Workloads
+Run tests against a specific version:
 
-Some workloads require specific features or configurations that may not be available in all Cassandra deployments. These workloads are marked with special annotations and are skipped by default when running tests.
+```bash
+./gradlew test40      # Cassandra 4.0
+./gradlew test41      # Cassandra 4.1
+./gradlew test50      # Cassandra 5.0
+```
 
-### DSE-Specific Workloads
+Run tests against all versions sequentially:
 
-Workloads that require DataStax Enterprise (DSE) features are marked with the `@RequireDSE` annotation.
+```bash
+./gradlew testAllVersions
+```
 
-Currently, the following workloads require DSE:
-- `DSESearch` - Uses DSE Search (Solr) functionality
+## Test Infrastructure
 
-To run tests that require DSE, set the `TEST_DSE` environment variable:
+### Testcontainers
 
-    TEST_DSE=1 ./gradlew test
+All integration tests use [Testcontainers](https://www.testcontainers.org/) to automatically manage Cassandra instances. This means:
 
-### Materialized Views Workloads
+- **No manual setup required**: Docker is the only prerequisite
+- **Isolated test environments**: Each test class gets a fresh Cassandra container
+- **Automatic cleanup**: Containers are stopped and removed after tests complete
+- **Version flexibility**: Different Cassandra versions can be tested without installing anything
 
-Workloads that use Materialized Views are marked with the `@RequireMVs` annotation. Materialized Views are not enabled by default. 
+When a test class extends `CassandraTestBase`, the framework automatically:
 
-Currently, the following workloads require Materialized Views:
-- `MaterializedViews` - Tests materialized view functionality
+1. Detects the `CASSANDRA_VERSION` environment variable (defaults to "5.0")
+2. Builds a Docker image from the corresponding Dockerfile in `docker/cassandra-{version}/`
+3. Starts a Cassandra container and waits for it to be ready
+4. Establishes a CQL session with appropriate timeouts for testing
+5. Cleans up and stops the container when tests finish
 
-To run tests that require Materialized Views, set the `TEST_MVS` environment variable:
+### Custom Docker Images
 
-    TEST_MVS=1 ./gradlew test
+Each Cassandra version uses a custom Dockerfile that enables experimental features:
 
-### Accord Workloads
+- **Materialized Views**: Enabled via `materialized_views_enabled: true`
+- **Increased Timeouts**: Higher read/write/range timeouts for test stability
+- **Memory Configuration**: Conservative heap settings suitable for containers
 
-Workloads that use Accord (available in Cassandra 6.0+) are marked with the `@RequireAccord` annotation.
+The Dockerfiles are located at:
+- `docker/cassandra-4.0/Dockerfile`
+- `docker/cassandra-4.1/Dockerfile`
+- `docker/cassandra-5.0/Dockerfile`
 
-Currently, the following workloads require Accord:
-- `TxnCounter` - Tests Accord transaction functionality
+## Workload Filtering Annotations
 
-To run tests that require Accord, set the `TEST_ACCORD` environment variable:
+Some workloads require specific Cassandra versions or features. Annotations control when workloads are tested.
 
-    TEST_ACCORD=1 ./gradlew test
+### @MinimumVersion
 
-### Running All Tests
+Marks workloads that require a minimum Cassandra version. Tests automatically skip these workloads on older versions.
 
-To run all tests including DSE, Materialized Views, and Accord workloads:
+**Example:**
+```kotlin
+@MinimumVersion("5.0")
+class SAI : IStressWorkload {
+    // SAI indexes are only available in Cassandra 5.0+
+}
+```
 
-    TEST_DSE=1 TEST_MVS=1 TEST_ACCORD=1 ./gradlew test
+**How it works:**
+- The `CASSANDRA_VERSION` environment variable determines which version is running
+- `Workload.getWorkloadsForTesting()` filters out workloads where the version doesn't meet the minimum
+- Version comparison supports point releases: "5.0", "5.1", etc.
 
-Make sure you have the appropriate Cassandra configuration and features enabled before running these specialized tests.
+**Currently annotated workloads:**
+- `MaterializedViews` - Requires 5.0+ (materialized views enabled)
+- `SAI` - Requires 5.0+ (Storage Attached Indexes)
+
+### @RequireDSE
+
+Marks workloads that require DataStax Enterprise features. These are skipped by default.
+
+**Example:**
+```kotlin
+@RequireDSE
+class DSESearch : IStressWorkload {
+    // Uses DSE Search (Solr) functionality
+}
+```
+
+**Enable in tests:**
+```bash
+TEST_DSE=1 ./gradlew test
+```
+
+**Currently annotated workloads:**
+- `DSESearch` - Uses DSE Search (Solr)
+
+### @RequireAccord
+
+Marks workloads that use Accord transaction features (available in Cassandra 6.0+). These are skipped by default.
+
+**Example:**
+```kotlin
+@RequireAccord
+class TxnCounter : IStressWorkload {
+    // Uses Accord transactions
+}
+```
+
+**Enable in tests:**
+```bash
+TEST_ACCORD=1 ./gradlew test
+```
+
+**Currently annotated workloads:**
+- `TxnCounter` - Uses Accord transactions
+
+### Running All Special Workloads
+
+To run all tests including DSE and Accord workloads:
+
+```bash
+TEST_DSE=1 TEST_ACCORD=1 ./gradlew test
+```
+
+## Gradle Test Tasks
+
+### Version-Specific Tasks
+
+Individual test tasks are created for each Cassandra version:
+
+```bash
+./gradlew test40      # Cassandra 4.0
+./gradlew test41      # Cassandra 4.1
+./gradlew test50      # Cassandra 5.0
+```
+
+These are proper Gradle `Test` tasks, so they support all standard Test task options:
+
+```bash
+# Run only specific tests
+./gradlew test50 --tests "*KeyValue*"
+
+# Enable debug mode
+./gradlew test50 --debug-jvm
+
+# Rerun even if up-to-date
+./gradlew test40 --rerun-tasks
+```
+
+**How they work:**
+- Each task sets `CASSANDRA_VERSION` environment variable to the corresponding version
+- Uses the same test sources and classpath as the main `test` task
+- Integrates with Gradle's task graph for proper caching and dependency management
+
+### testAllVersions Task
+
+Runs tests against all Cassandra versions sequentially:
+
+```bash
+./gradlew testAllVersions
+```
+
+This task:
+- Depends on `test40`, `test41`, and `test50`
+- Enforces sequential execution using `mustRunAfter` to prevent Docker resource conflicts
+- Stops on the first failure and reports which version failed
+- Displays a summary of all test results
+
+**Execution time:**
+- With cached Docker images: ~15-25 minutes total
+
+### Standard test Task
+
+The standard `test` task respects the `CASSANDRA_VERSION` environment variable:
+
+```bash
+# Test against Cassandra 4.1
+CASSANDRA_VERSION=4.1 ./gradlew test
+
+# Test against Cassandra 5.0 (default)
+CASSANDRA_VERSION=5.0 ./gradlew test
+```
+
+If `CASSANDRA_VERSION` is not set, it defaults to "5.0".
+
+## Continuous Integration
+
+### CI Workflow Structure
+
+The GitHub Actions CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request.
+
+**Test matrix:**
+- **Java versions**: 17 and 21
+- **Cassandra versions**: 4.0, 4.1, 5.0
+
+This creates 6 test jobs total:
+- Cassandra 4.0 on Java 17 and 21
+- Cassandra 4.1 on Java 17 and 21
+- Cassandra 5.0 on Java 17 and 21
+
+**Workflow steps:**
+
+1. **Checkout and setup**: Check out code, set up JDK and Gradle
+2. **Run tests**: Execute the version-specific test task (e.g., `./gradlew test50`)
+3. **Code quality**: Run ktlint and detekt checks in parallel
+4. **Coverage**: Generate code coverage reports with kover (using default test task only)
+5. **Build**: Create distribution tarball artifact (main branch only, after all checks pass)
+   - Artifact: `cassandra-easy-stress-{version}.tar.gz` 
+   - Retention: 90 days
+   - Contains: binaries, all dependencies, and LICENSE
+
+### Running CI Tests Locally
+
+Replicate CI behavior locally:
+
+```bash
+# Run the same tests as CI for Cassandra 5.0
+./gradlew test50 ktlintCheck detekt
+
+# Test all versions like CI does (sequentially)
+./gradlew testAllVersions
+
+# Generate coverage report
+./gradlew test koverXmlReport
+```
+
+## Writing Tests
+
+Integration tests extend `CassandraTestBase`:
+
+```kotlin
+class MyWorkloadTest : CassandraTestBase() {
+    @Test
+    fun testWorkload() {
+        // connection is available from CassandraTestBase
+        val result = connection.execute("SELECT * FROM system.local")
+        assertThat(result).isNotNull
+    }
+}
+```
+
+**Available properties from CassandraTestBase:**
+- `connection`: CqlSession instance
+- `ip`: Container IP address
+- `port`: Mapped CQL port
+- `localDc`: Datacenter name (defaults to "datacenter1")
+
+**Utility methods:**
+- `cleanupKeyspace()`: Drops the test keyspace
+- `keyspaceExists()`: Checks if test keyspace exists
+- `getCassandraVersion()`: Returns Cassandra release version string
+
+**Test guidelines:**
+- Use `CassandraTestBase` for integration tests requiring Cassandra
+- Use `@BeforeEach` to ensure clean state with `cleanupKeyspace()`
+- Use AssertJ assertions for clear, fluent test assertions
+- Test against multiple versions if workload behavior varies by version
+- Don't use `runBlocking` in tests (use `kotlinx.coroutines.test.runTest` instead)
 
 # MCP Server Integration
 
-cassandra-easy-stress includes a Model Context Protocol (MCP) server that allows AI assistants to interact with the stress testing tool.
+cassandra-easy-stress includes a Model Context Protocol (MCP) server that allows AI assistants to interact with the stress testing tool.  To start in server mode:
+
+```
+cassandra-easy-stress server
+```
 
 ## Testing with Claude Code
 

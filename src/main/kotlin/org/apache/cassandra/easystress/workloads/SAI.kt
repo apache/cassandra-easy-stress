@@ -19,6 +19,7 @@ package org.apache.cassandra.easystress.workloads
 
 import com.datastax.oss.driver.api.core.CqlSession
 import com.datastax.oss.driver.api.core.cql.PreparedStatement
+import org.apache.cassandra.easystress.MinimumVersion
 import org.apache.cassandra.easystress.PartitionKey
 import org.apache.cassandra.easystress.StressContext
 import org.apache.cassandra.easystress.WorkloadParameter
@@ -32,12 +33,15 @@ import java.util.concurrent.ThreadLocalRandom
 /**
  * Executes a SAI workload with queries restricted to a single partition,
  * which is the primary workload targeted by SAI indexes.
+ *
+ * SAI (Storage Attached Index) is available in Cassandra 5.0+
  */
 
 const val TABLE: String = "sai"
 const val MIN_VALUE_TEXT_SIZE = 1
 const val MAX_VALUE_TEXT_SIZE = 2
 
+@MinimumVersion("5.0")
 class SAI : IStressWorkload {
     @WorkloadParameter(description = "Operator to use for SAI queries, defaults to equality = search.")
     var intCompare = "="

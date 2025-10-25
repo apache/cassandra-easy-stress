@@ -114,6 +114,9 @@ dependencies {
     testImplementation libs.kotlin.test.junit
     testImplementation libs.mockk
     testImplementation libs.kotlinx.coroutines.test
+    testImplementation platform(libs.testcontainers.bom)
+    testImplementation libs.testcontainers.core
+    testImplementation libs.testcontainers.cassandra
 
 }
 
@@ -131,6 +134,76 @@ sourceSets {
 
 test {
     useJUnitPlatform()
+
+    // Make Gradle aware of CASSANDRA_VERSION environment variable
+    // This ensures tests rerun when the version changes
+    def cassandraVersion = System.getenv("CASSANDRA_VERSION") ?: "5.0"
+    inputs.property("cassandraVersion", cassandraVersion)
+
+    // Pass environment variable to test JVM
+    environment "CASSANDRA_VERSION", cassandraVersion
+}
+
+// Create individual test tasks for each Cassandra version
+["4.0", "4.1", "5.0"].each { version ->
+    def versionName = version.replace(".", "")
+    tasks.register("test${versionName}", Test) {
+        group = "Verification"
+        description = "Run tests against Cassandra ${version}"
+
+        useJUnitPlatform()
+
+        // Set the Cassandra version for this test task
+        environment "CASSANDRA_VERSION", version
+        inputs.property("cassandraVersion", version)
+
+        // Use same test sources and classpath as main test task
+        testClassesDirs = sourceSets.test.output.classesDirs
+        classpath = sourceSets.test.runtimeClasspath
+
+        doFirst {
+            println ""
+            println "=" * 80
+            println "Testing Cassandra ${version}"
+            println "=" * 80
+        }
+
+        doLast {
+            println ""
+            println "✅ Cassandra ${version} tests PASSED"
+        }
+    }
+}
+
+task testAllVersions {
+    group = "Verification"
+    description = "Run tests against all Cassandra versions (4.0, 4.1, 5.0)"
+
+    // Depend on all version-specific test tasks
+    dependsOn tasks.test40, tasks.test41, tasks.test50
+
+    // Ensure sequential execution
+    tasks.test41.mustRunAfter tasks.test40
+    tasks.test50.mustRunAfter tasks.test41
+
+    doFirst {
+        println ""
+        println "=" * 80
+        println "Running tests against all Cassandra versions: 4.0, 4.1, 5.0"
+        println "=" * 80
+    }
+
+    doLast {
+        println ""
+        println "=" * 80
+        println "Test Summary"
+        println "=" * 80
+        println "✅ Cassandra 4.0: PASSED"
+        println "✅ Cassandra 4.1: PASSED"
+        println "✅ Cassandra 5.0: PASSED"
+        println "=" * 80
+        println ""
+    }
 }
 
 task docs(type:Exec) {
