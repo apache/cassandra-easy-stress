@@ -225,8 +225,11 @@ task generateExamples(type: Exec) {
 
 jib {
     to {
-        image = "rustyrazorblade/cassandra-easy-stress"
+        image = "ghcr.io/${System.getenv('GITHUB_REPOSITORY') ?: 'apache/cassandra-easy-stress'}"
         tags = [version, "latest"]
+    }
+    from {
+        image = "eclipse-temurin:17-jre"
     }
 }
 
