@@ -163,3 +163,101 @@ jobs:
           path: build/distributions/*.tar.gz
           retention-days: 90
           if-no-files-found: error
+
+  create-test-artifact:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: cassandra-easy-stress-latest
+          path: artifacts
+
+      - name: Prepare release file
+        id: artifact
+        run: |
+          # Find the tarball and rename to consistent name
+          ARTIFACT=$(find artifacts -name "*.tar.gz" -type f | head -n 1)
+
+          if [[ -z "$ARTIFACT" ]]; then
+            echo "ERROR: No tarball artifact found"
+            exit 1
+          fi
+
+          echo "Found artifact: $ARTIFACT"
+
+          # Rename to consistent name for stable URL
+          TARGET_NAME="cassandra-easy-stress-latest.tar.gz"
+          cp "$ARTIFACT" "$TARGET_NAME"
+
+          # Verify file exists and is not empty
+          if [[ ! -f "$TARGET_NAME" || ! -s "$TARGET_NAME" ]]; then
+            echo "ERROR: Failed to create $TARGET_NAME"
+            exit 1
+          fi
+
+          FILE_SIZE=$(du -h "$TARGET_NAME" | cut -f1)
+          echo "Created $TARGET_NAME (size: $FILE_SIZE)"
+          echo "artifact_path=$TARGET_NAME" >> $GITHUB_OUTPUT
+          echo "artifact_size=$FILE_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Delete existing latest release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --repo ${{ github.repository }} || true
+          git push --delete origin latest || true
+
+      - name: Publish test artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Test Artifacts (Not an Official Release)"
+          prerelease: true
+          draft: false
+          body: |
+            ## ⚠️ Test Artifacts - Not an Official Release
+
+            **This is NOT an official release.** These are automated test artifacts built from the `main` branch for testing and development purposes only.
+
+            For official releases, see the [Releases page](https://github.com/${{ github.repository }}/releases).
+
+            ### Download URL
+
+            This URL always points to the latest test artifact from main:
+
+            ```
+            https://github.com/${{ github.repository }}/releases/download/latest/cassandra-easy-stress-latest.tar.gz
+            ```
+
+            ### Build Information
+
+            - **Artifact Size**: ${{ steps.artifact.outputs.artifact_size }}
+            - **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            - **Commit**: ${{ github.sha }}
+            - **Java Version**: 17 (Temurin)
+
+            ### Usage
+
+            ```bash
+            # Download and extract
+            curl -L -o cassandra-easy-stress.tar.gz \
+              https://github.com/${{ github.repository }}/releases/download/latest/cassandra-easy-stress-latest.tar.gz
+            tar -xzf cassandra-easy-stress.tar.gz
+
+            # Run
+            cd cassandra-easy-stress-*/
+            bin/cassandra-easy-stress --help
+            ```
+
+            ---
+
+            **Warning**: These artifacts are for testing only and may contain unreleased, unstable, or experimental features.
+          files: |
+            cassandra-easy-stress-latest.tar.gz
