@@ -31,17 +31,18 @@ class RequireAnnotationsTest {
 
     @Test
     fun testGetWorkloadsForTestingFiltersCorrectly() {
-        val testingWorkloads = Workload.getWorkloadsForTesting()
-
-        assertThat(System.getenv("TEST_DSE")).isNull()
-        assertThat(System.getenv("TEST_MVS")).isNull()
+        // Explicitly set environment to test expected behavior
+        val env = mapOf("CASSANDRA_VERSION" to "5.0")
+        val testingWorkloads = Workload.getWorkloadsForTesting(env)
 
         // Verify DSESearch, MaterializedViews, TxnCounter exist in all workloads
         assertThat(allWorkloads).containsKey("DSESearch")
         assertThat(allWorkloads).containsKey("MaterializedViews")
         assertThat(allWorkloads).containsKey("TxnCounter")
 
-        assertThat(testingWorkloads).doesNotContainKey("MaterializedViews")
+        // MaterializedViews and SAI should be included (version is 5.0)
+        // DSESearch and TxnCounter should be filtered out
+        assertThat(testingWorkloads).containsKey("MaterializedViews")
         assertThat(testingWorkloads).doesNotContainKey("DSESearch")
         assertThat(testingWorkloads).doesNotContainKey("TxnCounter")
     }
@@ -69,32 +70,33 @@ class RequireAnnotationsTest {
         // DSESearch should be included
         assertThat(testingWorkloads).containsKey("DSESearch")
 
-        // But MaterializedViews and TxnCounter should still be filtered out
-        assertThat(testingWorkloads).doesNotContainKey("MaterializedViews")
+        // MaterializedViews should be included (default version is 5.0)
+        // TxnCounter should still be filtered out
+        assertThat(testingWorkloads).containsKey("MaterializedViews")
         assertThat(testingWorkloads).doesNotContainKey("TxnCounter")
     }
 
     @Test
-    fun testMVsWorkloadFilteredWithoutEnvVar() {
-        // Test with empty environment
-        val emptyEnv = emptyMap<String, String>()
-        val testingWorkloads = Workload.getWorkloadsForTesting(emptyEnv)
+    fun testMaterializedViewsFilteredOnOlderVersions() {
+        // Test with Cassandra 4.1
+        val envWith41 = mapOf("CASSANDRA_VERSION" to "4.1")
+        val workloads = Workload.getWorkloadsForTesting(envWith41)
 
-        // MaterializedViews should be filtered out
-        assertThat(testingWorkloads).doesNotContainKey("MaterializedViews")
+        // MaterializedViews should be filtered out on 4.1
+        assertThat(workloads).doesNotContainKey("MaterializedViews")
 
         // Other non-annotated workloads should still be present
-        assertThat(testingWorkloads).containsKey("BasicTimeSeries")
-        assertThat(testingWorkloads).containsKey("KeyValue")
+        assertThat(workloads).containsKey("BasicTimeSeries")
+        assertThat(workloads).containsKey("KeyValue")
     }
 
     @Test
-    fun testMVsWorkloadIncludedWithEnvVar() {
-        // Test with TEST_MVS set
-        val envWithMVs = mapOf("TEST_MVS" to "1")
-        val workloads = Workload.getWorkloadsForTesting(envWithMVs)
+    fun testMaterializedViewsIncludedOn50() {
+        // Test with Cassandra 5.0
+        val envWith50 = mapOf("CASSANDRA_VERSION" to "5.0")
+        val workloads = Workload.getWorkloadsForTesting(envWith50)
 
-        // MaterializedViews should be included
+        // MaterializedViews should be included on 5.0
         assertThat(workloads).containsKey("MaterializedViews")
 
         // But DSESearch and TxnCounter should still be filtered out
@@ -125,9 +127,10 @@ class RequireAnnotationsTest {
         // TxnCounter should be included
         assertThat(workloads).containsKey("TxnCounter")
 
-        // But DSESearch and MaterializedViews should still be filtered out
+        // MaterializedViews should be included (default version is 5.0)
+        // DSESearch should still be filtered out
         assertThat(workloads).doesNotContainKey("DSESearch")
-        assertThat(workloads).doesNotContainKey("MaterializedViews")
+        assertThat(workloads).containsKey("MaterializedViews")
     }
 
     @Test
@@ -146,14 +149,13 @@ class RequireAnnotationsTest {
         val envWithAll =
             mapOf(
                 "TEST_DSE" to "1",
-                "TEST_MVS" to "1",
                 "TEST_ACCORD" to "1",
             )
         val workloads = Workload.getWorkloadsForTesting(envWithAll)
 
         // All annotated workloads should be included
         assertThat(workloads).containsKey("DSESearch")
-        assertThat(workloads).containsKey("MaterializedViews")
+        assertThat(workloads).containsKey("MaterializedViews") // Included via MinimumVersion
         assertThat(workloads).containsKey("TxnCounter")
 
         // And all other workloads should still be present
@@ -167,14 +169,20 @@ class RequireAnnotationsTest {
         val dseWorkload = allWorkloads["DSESearch"]
         val mvWorkload = allWorkloads["MaterializedViews"]
         val txnWorkload = allWorkloads["TxnCounter"]
+        val saiWorkload = allWorkloads["SAI"]
 
         assertThat(dseWorkload).isNotNull
         assertThat(dseWorkload!!.cls.isAnnotationPresent(RequireDSE::class.java)).isTrue
 
         assertThat(mvWorkload).isNotNull
-        assertThat(mvWorkload!!.cls.isAnnotationPresent(RequireMVs::class.java)).isTrue
+        assertThat(mvWorkload!!.cls.isAnnotationPresent(MinimumVersion::class.java)).isTrue
+        assertThat(mvWorkload.cls.getAnnotation(MinimumVersion::class.java).version).isEqualTo("5.0")
 
         assertThat(txnWorkload).isNotNull
         assertThat(txnWorkload!!.cls.isAnnotationPresent(RequireAccord::class.java)).isTrue
+
+        assertThat(saiWorkload).isNotNull
+        assertThat(saiWorkload!!.cls.isAnnotationPresent(MinimumVersion::class.java)).isTrue
+        assertThat(saiWorkload.cls.getAnnotation(MinimumVersion::class.java).version).isEqualTo("5.0")
     }
 }

@@ -43,11 +43,11 @@ import org.apache.cassandra.easystress.Context
 import org.apache.cassandra.easystress.FileReporter
 import org.apache.cassandra.easystress.Metrics
 import org.apache.cassandra.easystress.PopulateOption
-import org.apache.cassandra.easystress.WorkloadRunner
 import org.apache.cassandra.easystress.RateLimiterOptimizer
 import org.apache.cassandra.easystress.SchemaBuilder
 import org.apache.cassandra.easystress.SingleLineConsoleReporter
 import org.apache.cassandra.easystress.Workload
+import org.apache.cassandra.easystress.WorkloadRunner
 import org.apache.cassandra.easystress.collector.Collector
 import org.apache.cassandra.easystress.collector.CompositeCollector
 import org.apache.cassandra.easystress.collector.HdrCollector

@@ -1,10 +1,15 @@
 # cassandra-easy-stress Developer Guide
 
 ## Build and Testing Commands
+
+For comprehensive testing documentation, see the [Testing section in README.md](README.md#testing).
+
 - Build: `./gradlew shadowJar`
 - Run: `bin/cassandra-easy-stress`
 - Run tests: `./gradlew test`
 - Run single test: `./gradlew test --tests "org.apache.cassandra.easystress.MainArgumentsTest"`
+- Run tests against all versions: `./gradlew testAllVersions`
+- Run tests against specific version: `./gradlew test40` (or test41, test50)
 - Format code: `./gradlew ktlintFormat`
 - Check formatting: `./gradlew ktlintCheck`
 - Generate docs: `./gradlew docs`

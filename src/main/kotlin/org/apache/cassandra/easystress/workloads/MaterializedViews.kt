@@ -19,8 +19,8 @@ package org.apache.cassandra.easystress.workloads
 
 import com.datastax.oss.driver.api.core.CqlSession
 import com.datastax.oss.driver.api.core.cql.PreparedStatement
+import org.apache.cassandra.easystress.MinimumVersion
 import org.apache.cassandra.easystress.PartitionKey
-import org.apache.cassandra.easystress.RequireMVs
 import org.apache.cassandra.easystress.StressContext
 import org.apache.cassandra.easystress.generators.Field
 import org.apache.cassandra.easystress.generators.FieldFactory
@@ -30,7 +30,7 @@ import org.apache.cassandra.easystress.generators.functions.LastName
 import org.apache.cassandra.easystress.generators.functions.USCities
 import java.util.concurrent.ThreadLocalRandom
 
-@RequireMVs
+@MinimumVersion("5.0")
 class MaterializedViews : IStressWorkload {
     override fun prepare(session: CqlSession) {
         insert = session.prepare("INSERT INTO person (name, age, city) values (?, ?, ?)")
