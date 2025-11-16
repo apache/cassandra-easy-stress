@@ -30,9 +30,7 @@ class LWT : IStressWorkload {
     lateinit var delete: PreparedStatement
     lateinit var deletePartition: PreparedStatement
 
-    override fun schema(): List<String> {
-        return arrayListOf("""CREATE TABLE IF NOT EXISTS lwt (id text primary key, value int) """)
-    }
+    override fun schema(): List<String> = arrayListOf("""CREATE TABLE IF NOT EXISTS lwt (id text primary key, value int) """)
 
     override fun prepare(session: CqlSession) {
         insert = session.prepare("INSERT INTO lwt (id, value) VALUES (?, ?) IF NOT EXISTS")
@@ -43,7 +41,10 @@ class LWT : IStressWorkload {
     }
 
     override fun getRunner(context: StressContext): IStressRunner {
-        data class CallbackPayload(val id: String, val value: Int)
+        data class CallbackPayload(
+            val id: String,
+            val value: Int,
+        )
 
         return object : IStressRunner {
             val state = mutableMapOf<String, Int>()
@@ -55,13 +56,15 @@ class LWT : IStressWorkload {
                 val mutation =
                     if (currentValue != null) {
                         newValue = currentValue + 1
-                        update.bind()
+                        update
+                            .bind()
                             .setInt(0, newValue)
                             .setString(1, partitionKey.getText())
                             .setInt(2, currentValue)
                     } else {
                         newValue = 0
-                        insert.bind()
+                        insert
+                            .bind()
                             .setString(0, partitionKey.getText())
                             .setInt(1, newValue)
                     }
@@ -69,23 +72,25 @@ class LWT : IStressWorkload {
                 return Operation.Mutation(mutation, payload)
             }
 
-            override fun getNextSelect(partitionKey: PartitionKey): Operation {
-                return Operation.SelectStatement(
-                    select.bind()
+            override fun getNextSelect(partitionKey: PartitionKey): Operation =
+                Operation.SelectStatement(
+                    select
+                        .bind()
                         .setString(0, partitionKey.getText()),
                 )
-            }
 
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 val currentValue = state[partitionKey.getText()]
 
                 val deletion =
                     if (currentValue != null) {
-                        delete.bind()
+                        delete
+                            .bind()
                             .setString(0, partitionKey.getText())
                             .setInt(1, currentValue)
                     } else {
-                        deletePartition.bind()
+                        deletePartition
+                            .bind()
                             .setString(0, partitionKey.getText())
                     }
                 return Operation.Deletion(deletion)

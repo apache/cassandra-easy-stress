@@ -20,5 +20,8 @@ package org.apache.cassandra.easystress
 sealed class PopulateOption {
     class Standard : PopulateOption()
 
-    class Custom(val rows: Long, val deletes: Boolean = true) : PopulateOption()
+    class Custom(
+        val rows: Long,
+        val deletes: Boolean = true,
+    ) : PopulateOption()
 }

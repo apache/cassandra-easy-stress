@@ -30,7 +30,8 @@ class LastName : FieldGenerator {
 
     init {
         val tmp =
-            this::class.java.getResource("/names/last.txt")
+            this::class.java
+                .getResource("/names/last.txt")
                 .readText()
                 .split("\n")
                 .map { it.split(" ").first() }

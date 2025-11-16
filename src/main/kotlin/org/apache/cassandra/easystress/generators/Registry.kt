@@ -19,9 +19,14 @@ package org.apache.cassandra.easystress.generators
 
 import org.apache.logging.log4j.kotlin.logger
 
-data class Field(val table: String, val field: String)
+data class Field(
+    val table: String,
+    val field: String,
+)
 
-class FieldFactory(private val table: String) {
+class FieldFactory(
+    private val table: String,
+) {
     fun getField(field: String): Field = Field(table, field)
 }
 
@@ -44,13 +49,9 @@ class Registry(
 
         val functionLoader = FunctionLoader()
 
-        fun create(defaults: MutableMap<Field, FieldGenerator>): Registry {
-            return Registry(defaults)
-        }
+        fun create(defaults: MutableMap<Field, FieldGenerator>): Registry = Registry(defaults)
 
-        fun create(): Registry {
-            return Registry()
-        }
+        fun create(): Registry = Registry()
     }
 
     fun getFunctions(): Iterator<FunctionDescription> = functionLoader.iterator()
@@ -123,4 +124,6 @@ class Registry(
     }
 }
 
-class FieldNotFoundException(message: String) : Throwable(message)
+class FieldNotFoundException(
+    message: String,
+) : Throwable(message)

@@ -140,7 +140,8 @@ class SAI : IStressWorkload {
 
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val bound =
-                    insert.bind()
+                    insert
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, nextRowId)
                         .setString(2, value_text.getText())
@@ -170,15 +171,16 @@ class SAI : IStressWorkload {
 
             override fun getNextDelete(partitionKey: PartitionKey) =
                 Operation.Deletion(
-                    delete.bind()
+                    delete
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, nextRowId),
                 )
         }
     }
 
-    override fun getFieldGenerators(): Map<Field, FieldGenerator> {
-        return mapOf(
+    override fun getFieldGenerators(): Map<Field, FieldGenerator> =
+        mapOf(
             Field(TABLE, "value_text") to LastName(),
             Field(TABLE, "value_int") to
                 Random().apply {
@@ -186,5 +188,4 @@ class SAI : IStressWorkload {
                     max = 10000
                 },
         )
-    }
 }

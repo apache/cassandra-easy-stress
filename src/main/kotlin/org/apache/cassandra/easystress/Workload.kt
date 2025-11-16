@@ -56,8 +56,8 @@ data class Workload(
          * Parses a Cassandra version string into a comparable pair of (major, minor).
          * Examples: "5.0" -> (5, 0), "4.1" -> (4, 1), "trunk" -> (99, 99)
          */
-        private fun parseVersion(version: String): Pair<Int, Int> {
-            return when {
+        private fun parseVersion(version: String): Pair<Int, Int> =
+            when {
                 version == "trunk" || version == "latest" -> Pair(99, 99)
                 else -> {
                     val parts = version.split(".")
@@ -66,7 +66,6 @@ data class Workload(
                     Pair(major, minor)
                 }
             }
-        }
 
         /**
          * Compares two version strings.
@@ -133,7 +132,8 @@ data class Workload(
                 // AND
                 // - It meets the minimum version requirement
                 meetsVersionRequirement &&
-                    (!requiresDSE || testDSE) && (!requiresAccord || testAccord)
+                    (!requiresDSE || testDSE) &&
+                    (!requiresAccord || testAccord)
             }
         }
     }

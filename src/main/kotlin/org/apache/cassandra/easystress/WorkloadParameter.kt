@@ -17,4 +17,6 @@
  */
 package org.apache.cassandra.easystress
 
-annotation class WorkloadParameter(val description: String)
+annotation class WorkloadParameter(
+    val description: String,
+)

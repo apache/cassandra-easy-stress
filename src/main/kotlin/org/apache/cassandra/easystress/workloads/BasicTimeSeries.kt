@@ -89,7 +89,8 @@ class BasicTimeSeries : IStressWorkload {
         return object : IStressRunner {
             override fun getNextSelect(partitionKey: PartitionKey): Operation {
                 val bound =
-                    getPartitionHead.bind()
+                    getPartitionHead
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, limit)
                 return Operation.SelectStatement(bound)
@@ -99,7 +100,8 @@ class BasicTimeSeries : IStressWorkload {
                 val data = dataField.getText()
                 val timestamp = Uuids.timeBased()
                 val bound =
-                    prepared.bind()
+                    prepared
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setUuid(1, timestamp)
                         .setString(2, data)
@@ -109,7 +111,8 @@ class BasicTimeSeries : IStressWorkload {
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 val deleteTime = LocalDateTime.now().minusSeconds(deleteDepth.toLong())
                 val bound =
-                    delete.bind()
+                    delete
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInstant(1, deleteTime.toInstant(java.time.ZoneOffset.UTC))
                 return Operation.Deletion(bound)
@@ -117,13 +120,12 @@ class BasicTimeSeries : IStressWorkload {
         }
     }
 
-    override fun getFieldGenerators(): Map<Field, FieldGenerator> {
-        return mapOf(
+    override fun getFieldGenerators(): Map<Field, FieldGenerator> =
+        mapOf(
             Field("sensor_data", "data") to
                 Random().apply {
                     min = 100
                     max = 200
                 },
         )
-    }
 }

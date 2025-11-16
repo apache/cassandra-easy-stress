@@ -22,10 +22,13 @@ import org.apache.cassandra.easystress.generators.Function
 import java.util.concurrent.ThreadLocalRandom
 import kotlin.streams.toList
 
-data class City(val name: String, val stateShort: String, val stateFull: String, val cityAlias: String) {
-    override fun toString(): String {
-        return "$name, $stateShort"
-    }
+data class City(
+    val name: String,
+    val stateShort: String,
+    val stateFull: String,
+    val cityAlias: String,
+) {
+    override fun toString(): String = "$name, $stateShort"
 }
 
 @Function(
@@ -39,7 +42,14 @@ class USCities : FieldGenerator {
     init {
 
         val reader = this.javaClass.getResourceAsStream("/us_cities_states_counties.csv").bufferedReader()
-        cities = reader.lines().skip(1).map { it.split("|") }.filter { it.size > 4 }.map { City(it[0], it[1], it[2], it[3]) }.toList()
+        cities =
+            reader
+                .lines()
+                .skip(1)
+                .map { it.split("|") }
+                .filter { it.size > 4 }
+                .map { City(it[0], it[1], it[2], it[3]) }
+                .toList()
         size = cities.count()
     }
 

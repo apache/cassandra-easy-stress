@@ -56,8 +56,8 @@ class DSESearch : IStressWorkload {
         delete = session.prepare("DELETE from $table WHERE key = ? and c = ?")
     }
 
-    override fun schema(): List<String> {
-        return listOf(
+    override fun schema(): List<String> =
+        listOf(
             """
             CREATE TABLE IF NOT EXISTS $table (
                     key text,
@@ -70,7 +70,6 @@ class DSESearch : IStressWorkload {
             CREATE SEARCH INDEX IF NOT EXISTS ON $table WITH COLUMNS value_text
             """.trimIndent(),
         )
-    }
 
     override fun getRunner(context: StressContext): IStressRunner {
         val value = context.registry.getGenerator(table, "value_text")
@@ -88,7 +87,8 @@ class DSESearch : IStressWorkload {
 
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val bound =
-                    insert.bind()
+                    insert
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, nextRowId)
                         .setString(2, value.getText())
@@ -97,7 +97,9 @@ class DSESearch : IStressWorkload {
 
             override fun getNextSelect(partitionKey: PartitionKey): Operation {
                 val valueValue =
-                    value.getText().substringBeforeLast(" ")
+                    value
+                        .getText()
+                        .substringBeforeLast(" ")
                         .replace(regex, " ")
                         .trim()
 
@@ -110,14 +112,16 @@ class DSESearch : IStressWorkload {
                 val queryString = mapper.writeValueAsString(query)
 
                 val bound =
-                    select.bind()
+                    select
+                        .bind()
                         .setString(0, queryString)
                 return Operation.SelectStatement(bound)
             }
 
             override fun getNextDelete(partitionKey: PartitionKey) =
                 Operation.Deletion(
-                    delete.bind()
+                    delete
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, nextRowId),
                 )

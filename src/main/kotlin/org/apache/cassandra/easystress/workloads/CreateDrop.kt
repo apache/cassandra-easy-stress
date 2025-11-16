@@ -53,9 +53,7 @@ class CreateDrop : IStressWorkload {
     override fun prepare(session: CqlSession) {
     }
 
-    override fun schema(): List<String> {
-        return listOf()
-    }
+    override fun schema(): List<String> = listOf()
 
     override fun getDefaultReadRate() = 0.0
 
@@ -153,19 +151,21 @@ class CreateDrop : IStressWorkload {
                 return Operation.Mutation(bound)
             }
 
-            override fun getNextSelect(partitionKey: PartitionKey): Operation {
-                return Operation.SelectStatement(
-                    getRandomTable().select.bind()
+            override fun getNextSelect(partitionKey: PartitionKey): Operation =
+                Operation.SelectStatement(
+                    getRandomTable()
+                        .select
+                        .bind()
                         .setString(0, partitionKey.getText()),
                 )
-            }
 
-            override fun getNextDelete(partitionKey: PartitionKey): Operation {
-                return Operation.Deletion(
-                    getRandomTable().delete.bind()
+            override fun getNextDelete(partitionKey: PartitionKey): Operation =
+                Operation.Deletion(
+                    getRandomTable()
+                        .delete
+                        .bind()
                         .setString(0, partitionKey.getText()),
                 )
-            }
         }
     }
 

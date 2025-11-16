@@ -70,7 +70,8 @@ internal class SchemaBuilderTest {
             """.trimMargin()
 
         val query =
-            SchemaBuilder.create(base)
+            SchemaBuilder
+                .create(base)
                 .withCompression("{'enabled':enabled}")
                 .build()
 
@@ -86,7 +87,8 @@ internal class SchemaBuilderTest {
                         )"""
 
         val result =
-            SchemaBuilder.create(query)
+            SchemaBuilder
+                .create(query)
                 .withKeyCache("NONE")
                 .build()
 

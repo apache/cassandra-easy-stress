@@ -33,13 +33,17 @@ import java.util.SortedMap
 import java.util.concurrent.TimeUnit
 import java.util.zip.GZIPOutputStream
 
-class FileReporter(registry: MetricRegistry, outputFileName: String, command: String) : ScheduledReporter(
-    registry,
-    "file-reporter",
-    MetricFilter.ALL,
-    TimeUnit.SECONDS,
-    TimeUnit.MILLISECONDS,
-) {
+class FileReporter(
+    registry: MetricRegistry,
+    outputFileName: String,
+    command: String,
+) : ScheduledReporter(
+        registry,
+        "file-reporter",
+        MetricFilter.ALL,
+        TimeUnit.SECONDS,
+        TimeUnit.MILLISECONDS,
+    ) {
     // date 24h time
     // Thu-14Mar19-13.30.00
     private val startTime = Date()

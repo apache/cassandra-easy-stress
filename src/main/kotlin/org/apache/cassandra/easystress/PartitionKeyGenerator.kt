@@ -38,9 +38,8 @@ class PartitionKeyGenerator(
         /**
          *
          */
-        fun random(prefix: String = "test"): PartitionKeyGenerator {
-            return PartitionKeyGenerator({ max -> ThreadLocalRandom.current().nextLong(0, max) }, prefix)
-        }
+        fun random(prefix: String = "test"): PartitionKeyGenerator =
+            PartitionKeyGenerator({ max -> ThreadLocalRandom.current().nextLong(0, max) }, prefix)
 
         /**
          *
@@ -48,8 +47,7 @@ class PartitionKeyGenerator(
         fun sequence(prefix: String = "test"): PartitionKeyGenerator {
             var current = 0L
             return PartitionKeyGenerator(
-                {
-                        max ->
+                { max ->
                     if (current > max) {
                         current = 0
                     }

@@ -23,7 +23,9 @@ import org.apache.logging.log4j.kotlin.logger
  * Helper class that parses the field function spec
  * Example: book(), random(10), random(10, 20)
  */
-class ParsedFieldFunction(function: String) {
+class ParsedFieldFunction(
+    function: String,
+) {
     val name: String
     val args: List<String>
 

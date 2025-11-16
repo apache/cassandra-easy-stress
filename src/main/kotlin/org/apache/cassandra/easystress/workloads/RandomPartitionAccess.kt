@@ -74,8 +74,8 @@ class RandomPartitionAccess : IStressWorkload {
             }
     }
 
-    override fun schema(): List<String> {
-        return listOf(
+    override fun schema(): List<String> =
+        listOf(
             """CREATE TABLE IF NOT EXISTS random_access (
                            partition_id text,
                            row_id int,
@@ -83,7 +83,6 @@ class RandomPartitionAccess : IStressWorkload {
                            primary key (partition_id, row_id)
                         )""",
         )
-    }
 
     override fun getRunner(context: StressContext): IStressRunner {
         println("Using $rows rows per partition")
@@ -95,7 +94,8 @@ class RandomPartitionAccess : IStressWorkload {
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val rowId = random.nextInt(0, rows)
                 val bound =
-                    insertQuery.bind()
+                    insertQuery
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, rowId)
                         .setString(2, value.getText())
@@ -106,11 +106,13 @@ class RandomPartitionAccess : IStressWorkload {
                 val bound =
                     when (select) {
                         "partition" ->
-                            selectQuery.bind()
+                            selectQuery
+                                .bind()
                                 .setString(0, partitionKey.getText())
                         "row" -> {
                             val rowId = random.nextInt(0, rows)
-                            selectQuery.bind()
+                            selectQuery
+                                .bind()
                                 .setString(0, partitionKey.getText())
                                 .setInt(1, rowId)
                         }
@@ -123,11 +125,13 @@ class RandomPartitionAccess : IStressWorkload {
                 val bound =
                     when (delete) {
                         "partition" ->
-                            deleteQuery.bind()
+                            deleteQuery
+                                .bind()
                                 .setString(0, partitionKey.getText())
                         "row" -> {
                             val rowId = random.nextInt(0, rows)
-                            deleteQuery.bind()
+                            deleteQuery
+                                .bind()
                                 .setString(0, partitionKey.getText())
                                 .setInt(1, rowId)
                         }

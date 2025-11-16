@@ -32,7 +32,9 @@ fun MutableMap<String, String?>.putInt(
     return this
 }
 
-class SchemaBuilder(var baseStatement: String) {
+class SchemaBuilder(
+    var baseStatement: String,
+) {
     private var ttl: Long = 0
     private var compaction = ""
     private var compression = ""
@@ -46,7 +48,9 @@ class SchemaBuilder(var baseStatement: String) {
 
     val compactionShortcutRegex = """^(stcs|lcs|twcs|ucs)((?:,[0-9a-zA-Z]+)*)$""".toRegex()
 
-    enum class WindowUnit(val s: String) {
+    enum class WindowUnit(
+        val s: String,
+    ) {
         MINUTES("MINUTES"),
         HOURS("HOURS"),
         DAYS("DAYS"),
@@ -103,11 +107,12 @@ class SchemaBuilder(var baseStatement: String) {
                 mutableMapOf<String, String?>(
                     "class" to "TimeWindowCompactionStrategy",
                     "compaction_window_unit" to (windowUnit?.s ?: ""),
-                )
-                    .putInt("compaction_window_size", windowSize)
+                ).putInt("compaction_window_size", windowSize)
         }
 
-        data class UCS(val scalingParameters: String) : Compaction() {
+        data class UCS(
+            val scalingParameters: String,
+        ) : Compaction() {
             override fun getOptions() =
                 mutableMapOf<String, String?>(
                     "class" to "UnifiedCompactionStrategy",
@@ -115,7 +120,9 @@ class SchemaBuilder(var baseStatement: String) {
                 )
         }
 
-        data class Unknown(val raw: String) : Compaction() {
+        data class Unknown(
+            val raw: String,
+        ) : Compaction() {
             override fun getOptions() = mapOf<String, String?>()
 
             override fun toCQL() = raw.trim().replace("\"", "'")
@@ -138,9 +145,7 @@ class SchemaBuilder(var baseStatement: String) {
     }
 
     companion object {
-        fun create(baseStatement: String): SchemaBuilder {
-            return SchemaBuilder(baseStatement)
-        }
+        fun create(baseStatement: String): SchemaBuilder = SchemaBuilder(baseStatement)
     }
 
     fun withCompaction(compaction: String): SchemaBuilder {

@@ -41,7 +41,8 @@ class FirstName : FieldGenerator {
 
         for (s in arrayListOf("female", "male")) {
             val tmp =
-                this::class.java.getResource("/names/female.txt")
+                this::class.java
+                    .getResource("/names/female.txt")
                     .readText()
                     .split("\n")
                     .map { it.split(" ").first() }

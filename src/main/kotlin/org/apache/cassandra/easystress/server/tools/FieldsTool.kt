@@ -72,8 +72,8 @@ val FieldsTool =
         handler = ::handleFields,
     )
 
-private suspend fun handleFields(request: CallToolRequest): CallToolResult {
-    return try {
+private suspend fun handleFields(request: CallToolRequest): CallToolResult =
+    try {
         val functions =
             withContext(Dispatchers.IO) {
                 val registry = Registry.create()
@@ -111,4 +111,3 @@ private suspend fun handleFields(request: CallToolRequest): CallToolResult {
             isError = true,
         )
     }
-}

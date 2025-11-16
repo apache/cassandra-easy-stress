@@ -32,13 +32,15 @@ import java.util.SortedMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-class SingleLineConsoleReporter(registry: MetricRegistry) : ScheduledReporter(
-    registry,
-    "single-line-console-reporter",
-    MetricFilter.ALL,
-    TimeUnit.SECONDS,
-    TimeUnit.MILLISECONDS,
-) {
+class SingleLineConsoleReporter(
+    registry: MetricRegistry,
+) : ScheduledReporter(
+        registry,
+        "single-line-console-reporter",
+        MetricFilter.ALL,
+        TimeUnit.SECONDS,
+        TimeUnit.MILLISECONDS,
+    ) {
     val logger = logger()
     var lines = 0L
 

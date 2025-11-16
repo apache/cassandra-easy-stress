@@ -45,8 +45,9 @@ class FlagsTest : CassandraTestBase() {
 
     @Test
     fun csvTest() {
-        keyvalue.apply {
-            csvFile = "test.csv"
-        }.execute()
+        keyvalue
+            .apply {
+                csvFile = "test.csv"
+            }.execute()
     }
 }
