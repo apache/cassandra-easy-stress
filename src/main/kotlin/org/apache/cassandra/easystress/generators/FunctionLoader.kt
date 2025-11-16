@@ -25,7 +25,9 @@ data class FunctionDescription(
     val description: String,
 )
 
-class AnnotationMissingException(val name: Class<out FieldGenerator>) : Exception()
+class AnnotationMissingException(
+    val name: Class<out FieldGenerator>,
+) : Exception()
 
 /**
  * Finds all the available functions and tracks them by name
@@ -46,7 +48,9 @@ class FunctionLoader : Iterable<FunctionDescription> {
         }
     }
 
-    class FunctionNotFound(val name: String) : Exception()
+    class FunctionNotFound(
+        val name: String,
+    ) : Exception()
 
     val map: MutableMap<String, Class<out FieldGenerator>> = mutableMapOf()
 

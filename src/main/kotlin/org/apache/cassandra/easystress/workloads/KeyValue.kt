@@ -48,9 +48,7 @@ class KeyValue : IStressWorkload {
         return listOf(table)
     }
 
-    override fun getDefaultReadRate(): Double {
-        return 0.5
-    }
+    override fun getDefaultReadRate(): Double = 0.5
 
     override fun getRunner(context: StressContext): IStressRunner {
         val value = context.registry.getGenerator("keyvalue", "value")
@@ -64,7 +62,8 @@ class KeyValue : IStressWorkload {
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val data = value.getText()
                 val bound =
-                    insert.bind()
+                    insert
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setString(1, data)
 

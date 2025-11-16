@@ -26,4 +26,6 @@ package org.apache.cassandra.easystress
  */
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.RUNTIME)
-annotation class MinimumVersion(val version: String)
+annotation class MinimumVersion(
+    val version: String,
+)

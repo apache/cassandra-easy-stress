@@ -108,8 +108,8 @@ class ToolInputSchemaGenerator(
         )
     }
 
-    private fun createInstance(): IStressCommand {
-        return try {
+    private fun createInstance(): IStressCommand =
+        try {
             // Find the primary constructor (not the synthetic serialization constructor)
             // The serialization constructor has a SerializationConstructorMarker parameter
             val constructor =
@@ -122,7 +122,6 @@ class ToolInputSchemaGenerator(
         } catch (e: Exception) {
             throw IllegalArgumentException("Cannot instantiate ${commandClass.simpleName}: ${e.message}", e)
         }
-    }
 
     private fun mapTypeToJsonSchema(type: Class<*>): String =
         when {

@@ -70,9 +70,7 @@ class Locking : IStressWorkload {
 
     override fun getPopulateOption(args: Run): PopulateOption = PopulateOption.Custom(args.partitionCount, deletes = false)
 
-    override fun getPopulatePartitionKeyGenerator(): Optional<PartitionKeyGenerator> {
-        return Optional.of(PartitionKeyGenerator.sequence("test"))
-    }
+    override fun getPopulatePartitionKeyGenerator(): Optional<PartitionKeyGenerator> = Optional.of(PartitionKeyGenerator.sequence("test"))
 
     override fun getRunner(context: StressContext): IStressRunner {
         return object : IStressRunner {
@@ -92,7 +90,8 @@ class Locking : IStressWorkload {
                 log.trace { "Updating ${partitionKey.getText()} to $newState" }
 
                 val bound =
-                    update.bind()
+                    update
+                        .bind()
                         .setInt(0, newState)
                         .setString(1, partitionKey.getText())
                         .setInt(2, newState)
@@ -102,21 +101,24 @@ class Locking : IStressWorkload {
 
             override fun getNextSelect(partitionKey: PartitionKey): Operation {
                 val bound =
-                    select.bind()
+                    select
+                        .bind()
                         .setString(0, partitionKey.getText())
                 return Operation.SelectStatement(bound)
             }
 
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 val bound =
-                    delete.bind()
+                    delete
+                        .bind()
                         .setString(0, partitionKey.getText())
                 return Operation.Deletion(bound)
             }
 
             override fun getNextPopulate(partitionKey: PartitionKey): Operation {
                 val bound =
-                    insert.bind()
+                    insert
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setString(1, "test")
                 return Operation.Mutation(bound)

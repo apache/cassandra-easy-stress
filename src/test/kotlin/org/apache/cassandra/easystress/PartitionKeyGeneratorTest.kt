@@ -39,7 +39,12 @@ internal class PartitionKeyGeneratorTest {
     @Test
     fun testRepeatingSequence() {
         val p = PartitionKeyGenerator.sequence("test")
-        val data = p.generateKey(10, 2).take(5).toList().map { it.id.toInt() }
+        val data =
+            p
+                .generateKey(10, 2)
+                .take(5)
+                .toList()
+                .map { it.id.toInt() }
         assertThat(data).isEqualTo(listOf(0, 1, 2, 0, 1))
     }
 

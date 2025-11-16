@@ -59,18 +59,19 @@ class AllWorkloadsBasicTest : CassandraTestBase() {
     @AllWorkloads
     @ParameterizedTest(name = "run test {0}")
     fun runEachTest(workload: Workload) {
-        run.apply {
-            host = ip
-            cqlPort = port
-            this.workload = workload.name
-            duration = 10
-            rate = 50L
-            partitionCount = 1000
-            prometheusPort = 0
-            threads = 2
-            useOptimizer = false
-            replication = "{'class': 'SimpleStrategy', 'replication_factor':1 }"
-            dc = localDc // Use the datacenter from the base class
-        }.execute()
+        run
+            .apply {
+                host = ip
+                cqlPort = port
+                this.workload = workload.name
+                duration = 10
+                rate = 50L
+                partitionCount = 1000
+                prometheusPort = 0
+                threads = 2
+                useOptimizer = false
+                replication = "{'class': 'SimpleStrategy', 'replication_factor':1 }"
+                dc = localDc // Use the datacenter from the base class
+            }.execute()
     }
 }

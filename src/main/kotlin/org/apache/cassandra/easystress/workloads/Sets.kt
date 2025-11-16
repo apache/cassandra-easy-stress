@@ -38,8 +38,8 @@ class Sets : IStressWorkload {
         deleteElement = session.prepare("UPDATE sets SET values = values - ? WHERE key = ?")
     }
 
-    override fun schema(): List<String> {
-        return listOf(
+    override fun schema(): List<String> =
+        listOf(
             """
             CREATE TABLE IF NOT EXISTS sets (
             |key text primary key,
@@ -47,7 +47,6 @@ class Sets : IStressWorkload {
             |)
             """.trimMargin(),
         )
-    }
 
     override fun getRunner(context: StressContext): IStressRunner {
         val payload = context.registry.getGenerator("sets", "values")
@@ -69,7 +68,8 @@ class Sets : IStressWorkload {
 
             override fun getNextSelect(partitionKey: PartitionKey): Operation {
                 val bound =
-                    select.bind()
+                    select
+                        .bind()
                         .setString(0, partitionKey.getText())
                 return Operation.SelectStatement(bound)
             }
@@ -87,13 +87,12 @@ class Sets : IStressWorkload {
         }
     }
 
-    override fun getFieldGenerators(): Map<Field, FieldGenerator> {
-        return mapOf(
+    override fun getFieldGenerators(): Map<Field, FieldGenerator> =
+        mapOf(
             Field("sets", "values") to
                 Random().apply {
                     min = 6
                     max = 16
                 },
         )
-    }
 }

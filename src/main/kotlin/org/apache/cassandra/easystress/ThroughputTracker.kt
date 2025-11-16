@@ -259,5 +259,8 @@ class ThroughputTracker(
     @VisibleForTesting
     fun getSample(index: Int) = Sample(buffer[index][0], buffer[index][1])
 
-    data class Sample(val time: Long, val value: Long)
+    data class Sample(
+        val time: Long,
+        val value: Long,
+    )
 }

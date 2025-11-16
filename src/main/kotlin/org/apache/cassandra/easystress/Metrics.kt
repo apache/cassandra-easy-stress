@@ -25,12 +25,17 @@ import io.prometheus.client.exporter.HTTPServer
 import java.util.Optional
 import java.util.concurrent.TimeUnit
 
-class Metrics(val metricRegistry: MetricRegistry, val reporters: List<ScheduledReporter>, httpPort: Int) {
+class Metrics(
+    val metricRegistry: MetricRegistry,
+    val reporters: List<ScheduledReporter>,
+    httpPort: Int,
+) {
     val server: Optional<HTTPServer>
 
     fun startReporting() {
-        for (reporter in reporters)
+        for (reporter in reporters) {
             reporter.start(3, TimeUnit.SECONDS)
+        }
     }
 
     fun shutdown() {
@@ -84,12 +89,11 @@ class Metrics(val metricRegistry: MetricRegistry, val reporters: List<ScheduledR
         populateThroughputTracker.reset()
     }
 
-    fun getTracker(countSupplier: () -> Long): ThroughputTracker {
-        return ThroughputTracker(
+    fun getTracker(countSupplier: () -> Long): ThroughputTracker =
+        ThroughputTracker(
             windowSize = 10,
             countSupplier = countSupplier,
         )
-    }
 
     fun getSelectThroughput() = selectThroughputTracker.getCurrentThroughput()
 

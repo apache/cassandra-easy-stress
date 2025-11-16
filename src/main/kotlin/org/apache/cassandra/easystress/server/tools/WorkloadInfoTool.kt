@@ -101,8 +101,8 @@ val WorkloadInfoTool =
         handler = ::handleWorkloadInfo,
     )
 
-private suspend fun handleWorkloadInfo(request: CallToolRequest): CallToolResult {
-    return try {
+private suspend fun handleWorkloadInfo(request: CallToolRequest): CallToolResult =
+    try {
         val workloadName = Json.decodeFromJsonElement<WorkloadInfoRequest>(request.arguments).workload
 
         logger.info { "Info request for $workloadName" }
@@ -171,4 +171,3 @@ private suspend fun handleWorkloadInfo(request: CallToolRequest): CallToolResult
             isError = true,
         )
     }
-}

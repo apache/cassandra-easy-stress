@@ -40,25 +40,27 @@ class Maps : IStressWorkload {
 
     override fun getRunner(context: StressContext): IStressRunner {
         return object : IStressRunner {
-            override fun getNextMutation(partitionKey: PartitionKey): Operation {
-                return Operation.Mutation(
-                    insert.bind()
+            override fun getNextMutation(partitionKey: PartitionKey): Operation =
+                Operation.Mutation(
+                    insert
+                        .bind()
                         .setString(0, "key")
                         .setString(1, "value")
                         .setString(2, partitionKey.getText()),
                 )
-            }
 
             override fun getNextSelect(partitionKey: PartitionKey): Operation {
                 val b =
-                    select.bind()
+                    select
+                        .bind()
                         .setString(0, partitionKey.getText())
                 return Operation.SelectStatement(b)
             }
 
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 val b =
-                    delete.bind()
+                    delete
+                        .bind()
                         .setString(0, partitionKey.getText())
                 return Operation.Deletion(b)
             }

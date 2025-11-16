@@ -41,8 +41,8 @@ class CountersWide : IStressWorkload {
         deleteOne = session.prepare("DELETE from counter_wide WHERE key = ? AND cluster = ?")
     }
 
-    override fun schema(): List<String> {
-        return listOf(
+    override fun schema(): List<String> =
+        listOf(
             """CREATE TABLE IF NOT EXISTS counter_wide (
             | key text,
             | cluster bigint,
@@ -50,7 +50,6 @@ class CountersWide : IStressWorkload {
             | primary key(key, cluster))
             """.trimMargin(),
         )
-    }
 
     override fun getRunner(context: StressContext): IStressRunner {
         // for now i'm just going to hardcode this at 10K items
@@ -62,7 +61,8 @@ class CountersWide : IStressWorkload {
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val clusteringKey = (ThreadLocalRandom.current().nextGaussian() * rowsPerPartition.toDouble()).roundToLong()
                 val tmp =
-                    increment.bind()
+                    increment
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setLong(1, clusteringKey)
                 return Operation.Mutation(tmp)
@@ -74,14 +74,16 @@ class CountersWide : IStressWorkload {
                 if (iterations % 2 == 0L) {
                     val clusteringKey = (ThreadLocalRandom.current().nextGaussian() * rowsPerPartition.toDouble()).roundToLong()
                     return Operation.SelectStatement(
-                        selectOne.bind()
+                        selectOne
+                            .bind()
                             .setString(0, partitionKey.getText())
                             .setLong(1, clusteringKey),
                     )
                 }
 
                 return Operation.SelectStatement(
-                    selectAll.bind()
+                    selectAll
+                        .bind()
                         .setString(0, partitionKey.getText()),
                 )
             }
@@ -89,7 +91,8 @@ class CountersWide : IStressWorkload {
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 val clusteringKey = (ThreadLocalRandom.current().nextGaussian() * rowsPerPartition.toDouble()).roundToLong()
                 return Operation.Deletion(
-                    deleteOne.bind()
+                    deleteOne
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setLong(1, clusteringKey),
                 )

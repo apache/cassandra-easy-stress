@@ -77,13 +77,17 @@ class UdtTimeSeries : IStressWorkload {
         return object : IStressRunner {
             val keyspace = context.session.getKeyspace().orElse(null) ?: throw RuntimeException("No keyspace selected")
             val udt =
-                context.session.getMetadata().getKeyspace(keyspace).flatMap {
-                    it.getUserDefinedType("sensor_data_details")
-                }.orElseThrow { RuntimeException("UDT not found") }
+                context.session
+                    .getMetadata()
+                    .getKeyspace(keyspace)
+                    .flatMap {
+                        it.getUserDefinedType("sensor_data_details")
+                    }.orElseThrow { RuntimeException("UDT not found") }
 
             override fun getNextSelect(partitionKey: PartitionKey): Operation {
                 val bound =
-                    getPartitionHead.bind()
+                    getPartitionHead
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, limit)
                 return Operation.SelectStatement(bound)
@@ -92,10 +96,16 @@ class UdtTimeSeries : IStressWorkload {
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val data = dataField.getText()
                 val chunks = data.chunked(data.length / 3)
-                val udtValue = udt.newValue().setString("data1", chunks[0]).setString("data2", chunks[1]).setString("data3", chunks[2])
+                val udtValue =
+                    udt
+                        .newValue()
+                        .setString("data1", chunks[0])
+                        .setString("data2", chunks[1])
+                        .setString("data3", chunks[2])
                 val timestamp = Uuids.timeBased()
                 val bound =
-                    insert.bind()
+                    insert
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setUuid(1, timestamp)
                         .setUdtValue(2, udtValue)
@@ -104,20 +114,20 @@ class UdtTimeSeries : IStressWorkload {
 
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 val bound =
-                    deletePartitionHead.bind()
+                    deletePartitionHead
+                        .bind()
                         .setString(0, partitionKey.getText())
                 return Operation.Deletion(bound)
             }
         }
     }
 
-    override fun getFieldGenerators(): Map<Field, FieldGenerator> {
-        return mapOf(
+    override fun getFieldGenerators(): Map<Field, FieldGenerator> =
+        mapOf(
             Field("sensor_data", "data") to
                 Random().apply {
                     min = 100
                     max = 200
                 },
         )
-    }
 }

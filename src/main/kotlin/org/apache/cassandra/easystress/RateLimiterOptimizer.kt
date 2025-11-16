@@ -150,16 +150,13 @@ class RateLimiterOptimizer(
     /**
      * Added to prevent the rate limiter from acting when queries aren't running, generally during populate phase
      */
-    fun getTotalOperations(): Long {
-        return metrics.mutations.count + metrics.selects.count
-    }
+    fun getTotalOperations(): Long = metrics.mutations.count + metrics.selects.count
 
-    fun getCurrentTotalThroughput(): Double {
-        return metrics.getSelectThroughput() +
+    fun getCurrentTotalThroughput(): Double =
+        metrics.getSelectThroughput() +
             metrics.getMutationThroughput() +
             metrics.getDeletionThroughput() +
             metrics.getPopulateThroughput()
-    }
 
     /**
      * Determines which latency metric is most critical and returns it with its target.

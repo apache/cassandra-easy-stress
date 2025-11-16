@@ -63,11 +63,13 @@ class RangeScan : IStressWorkload {
                 ranges = splitRanges
                 val tmp = table.split(".")
                 var partitionKeys =
-                    metadata.getKeyspace(tmp[0]).flatMap { ks ->
-                        ks.getTable(tmp[1]).map { table ->
-                            table.partitionKey.map { col -> col.name.asInternal() }.joinToString(", ")
-                        }
-                    }.orElseThrow { RuntimeException("Table not found") }
+                    metadata
+                        .getKeyspace(tmp[0])
+                        .flatMap { ks ->
+                            ks.getTable(tmp[1]).map { table ->
+                                table.partitionKey.map { col -> col.name.asInternal() }.joinToString(", ")
+                            }
+                        }.orElseThrow { RuntimeException("Table not found") }
                 logger.info("Using splits on $partitionKeys")
                 " WHERE token($partitionKeys) > ? AND token($partitionKeys) < ?"
             } else {
@@ -80,38 +82,33 @@ class RangeScan : IStressWorkload {
         select = session.prepare(s)
     }
 
-    override fun schema(): List<String> {
-        return listOf()
-    }
+    override fun schema(): List<String> = listOf()
 
-    override fun getDefaultReadRate(): Double {
-        return 1.0
-    }
+    override fun getDefaultReadRate(): Double = 1.0
 
-    override fun getRunner(context: StressContext): IStressRunner {
-        return object : IStressRunner {
+    override fun getRunner(context: StressContext): IStressRunner =
+        object : IStressRunner {
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 // we need the ability to say a workload doesn't support mutations
                 TODO("Not yet implemented")
             }
 
-            override fun getNextSelect(partitionKey: PartitionKey): Operation {
-                return if (splits > 1) {
+            override fun getNextSelect(partitionKey: PartitionKey): Operation =
+                if (splits > 1) {
                     val tmp = ranges.random()
                     val bound =
-                        select.bind()
+                        select
+                            .bind()
                             .setToken(0, tmp.start)
                             .setToken(1, tmp.end)
                     Operation.SelectStatement(bound)
                 } else {
                     Operation.SelectStatement(select.bind())
                 }
-            }
 
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 // we need the ability to say a workload doesn't support deletes
                 TODO("Not yet implemented")
             }
         }
-    }
 }

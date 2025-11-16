@@ -67,7 +67,8 @@ abstract class CassandraTestBase {
          * These values are optimized for test stability over performance.
          */
         fun createConfigLoader(): DriverConfigLoader =
-            DriverConfigLoader.programmaticBuilder()
+            DriverConfigLoader
+                .programmaticBuilder()
                 .withString(DefaultDriverOption.REQUEST_TIMEOUT, "${REQUEST_TIMEOUT_SECONDS}s")
                 .withString(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, "${CONTROL_CONNECTION_TIMEOUT_SECONDS}s")
                 .withString(DefaultDriverOption.METADATA_SCHEMA_REQUEST_TIMEOUT, "${METADATA_SCHEMA_TIMEOUT_SECONDS}s")
@@ -121,13 +122,12 @@ abstract class CassandraTestBase {
                 GenericContainer(
                     ImageFromDockerfile()
                         .withDockerfile(dockerfilePath.resolve("Dockerfile")),
-                )
-                    .withExposedPorts(CASSANDRA_PORT)
+                ).withExposedPorts(CASSANDRA_PORT)
                     .waitingFor(
-                        Wait.forLogMessage(".*Startup complete.*", 1)
+                        Wait
+                            .forLogMessage(".*Startup complete.*", 1)
                             .withStartupTimeout(Duration.ofSeconds(CONTAINER_STARTUP_TIMEOUT_SECONDS)),
-                    )
-                    .withStartupTimeout(Duration.ofSeconds(CONTAINER_STARTUP_TIMEOUT_SECONDS))
+                    ).withStartupTimeout(Duration.ofSeconds(CONTAINER_STARTUP_TIMEOUT_SECONDS))
 
             // Start the container
             logger.info("Starting Cassandra container...")
@@ -152,7 +152,8 @@ abstract class CassandraTestBase {
                 try {
                     logger.debug("Connection attempt {}/3", attempt)
                     connection =
-                        CqlSession.builder()
+                        CqlSession
+                            .builder()
                             .addContactPoint(InetSocketAddress(ip, port))
                             .withLocalDatacenter(localDc)
                             .withConfigLoader(createConfigLoader())

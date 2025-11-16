@@ -29,10 +29,12 @@ internal class RegistryTest {
     @BeforeEach
     fun setUp() {
         registry =
-            Registry.create()
+            Registry
+                .create()
                 .setDefault("test", "city", USCities())
                 .setDefault(
-                    "test", "age",
+                    "test",
+                    "age",
                     Random().apply {
                         min = 10
                         max = 100

@@ -33,6 +33,4 @@ fun randomString(length: Int): String {
     return generator.generate(length)
 }
 
-fun round(num: Double): Double {
-    return DecimalFormat("##.##").format(num).toDouble()
-}
+fun round(num: Double): Double = DecimalFormat("##.##").format(num).toDouble()

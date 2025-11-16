@@ -20,8 +20,9 @@ package org.apache.cassandra.easystress
 /**
  * Will replace the current requirement that a PK can only be a text field
  */
-class PartitionKey(val prefix: String, val id: Long) {
-    fun getText(): String {
-        return prefix + id.toString()
-    }
+class PartitionKey(
+    val prefix: String,
+    val id: Long,
+) {
+    fun getText(): String = prefix + id.toString()
 }

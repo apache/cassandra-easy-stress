@@ -45,8 +45,8 @@ class AllowFiltering : IStressWorkload {
         delete = session.prepare("DELETE from allow_filtering WHERE partition_id = ? and row_id = ?")
     }
 
-    override fun schema(): List<String> {
-        return listOf(
+    override fun schema(): List<String> =
+        listOf(
             """CREATE TABLE IF NOT EXISTS allow_filtering (
             |partition_id text,
             |row_id int,
@@ -56,7 +56,6 @@ class AllowFiltering : IStressWorkload {
             |) 
             """.trimMargin(),
         )
-    }
 
     override fun getRunner(context: StressContext): IStressRunner {
         val payload = context.registry.getGenerator("allow_filtering", "payload")
@@ -68,7 +67,8 @@ class AllowFiltering : IStressWorkload {
                 val value = random.nextInt(0, maxValue)
 
                 val bound =
-                    insert.bind()
+                    insert
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, rowId)
                         .setInt(2, value)
@@ -79,7 +79,8 @@ class AllowFiltering : IStressWorkload {
             override fun getNextSelect(partitionKey: PartitionKey): Operation {
                 val value = random.nextInt(0, maxValue)
                 val bound =
-                    select.bind()
+                    select
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, value)
                 return Operation.SelectStatement(bound)
@@ -88,7 +89,8 @@ class AllowFiltering : IStressWorkload {
             override fun getNextDelete(partitionKey: PartitionKey): Operation {
                 val rowId = random.nextInt(0, rows)
                 val bound =
-                    delete.bind()
+                    delete
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, rowId)
                 return Operation.Deletion(bound)

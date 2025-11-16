@@ -73,11 +73,7 @@ class CommandLineParser(
         getCommandInstance().execute()
     }
 
-    fun getParsedCommand(): String {
-        return jCommander.parsedCommand
-    }
+    fun getParsedCommand(): String = jCommander.parsedCommand
 
-    fun getCommandInstance(): IStressCommand {
-        return commands[getParsedCommand()]!!
-    }
+    fun getCommandInstance(): IStressCommand = commands[getParsedCommand()]!!
 }

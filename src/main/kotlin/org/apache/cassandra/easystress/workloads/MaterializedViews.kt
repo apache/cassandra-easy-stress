@@ -66,7 +66,8 @@ class MaterializedViews : IStressWorkload {
             override fun getNextMutation(partitionKey: PartitionKey): Operation {
                 val num = ThreadLocalRandom.current().nextInt(1, 110)
                 return Operation.Mutation(
-                    insert.bind()
+                    insert
+                        .bind()
                         .setString(0, partitionKey.getText())
                         .setInt(1, num)
                         .setString(2, cities.getText()),
@@ -79,12 +80,14 @@ class MaterializedViews : IStressWorkload {
                     when (selectCount % 2L) {
                         0L ->
                             Operation.SelectStatement(
-                                selectByAge.bind()
+                                selectByAge
+                                    .bind()
                                     .setInt(0, num),
                             )
                         else ->
                             Operation.SelectStatement(
-                                selectByCity.bind()
+                                selectByCity
+                                    .bind()
                                     .setString(0, "test"),
                             )
                     }
@@ -92,12 +95,12 @@ class MaterializedViews : IStressWorkload {
                 return result
             }
 
-            override fun getNextDelete(partitionKey: PartitionKey): Operation {
-                return Operation.Deletion(
-                    deleteBase.bind()
+            override fun getNextDelete(partitionKey: PartitionKey): Operation =
+                Operation.Deletion(
+                    deleteBase
+                        .bind()
                         .setString(0, partitionKey.getText()),
                 )
-            }
         }
     }
 

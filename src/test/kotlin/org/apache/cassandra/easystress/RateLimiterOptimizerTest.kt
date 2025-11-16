@@ -35,9 +35,7 @@ class RateLimiterOptimizerTest {
     fun pair(
         current: Double,
         max: Long,
-    ): Optional<Pair<Double, Long>> {
-        return Optional.of(Pair(current, max))
-    }
+    ): Optional<Pair<Double, Long>> = Optional.of(Pair(current, max))
 
     @Test
     fun testSimpleReadLimitRaise() {

@@ -70,8 +70,8 @@ val ListWorkloadsTool =
         handler = ::handleListWorkloads,
     )
 
-private suspend fun handleListWorkloads(request: CallToolRequest): CallToolResult {
-    return try {
+private suspend fun handleListWorkloads(request: CallToolRequest): CallToolResult =
+    try {
         val workloads =
             withContext(Dispatchers.IO) {
                 Workload.getWorkloads()
@@ -107,4 +107,3 @@ private suspend fun handleListWorkloads(request: CallToolRequest): CallToolResul
             isError = true,
         )
     }
-}
