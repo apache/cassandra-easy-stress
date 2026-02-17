@@ -98,6 +98,7 @@ class VectorSearch : IStressWorkload {
     private val totalRecall = AtomicLong(0)
     private val minRecall = AtomicInteger(Int.MAX_VALUE)
     private val maxRecall = AtomicInteger(Int.MIN_VALUE)
+    private val skippedQueryCount = AtomicLong(0)
 
     // Sequential counter for inserting training vectors in order
     private val insertCounter = AtomicLong(0)
@@ -273,10 +274,15 @@ class VectorSearch : IStressWorkload {
                 // Only count neighbors that have actually been inserted
                 val relevantTruth = truthIndices.intersect(insertedIndices)
 
+                // Skip recall calculation if no ground truth neighbors are inserted yet
+                if (relevantTruth.isEmpty()) {
+                    skippedQueryCount.incrementAndGet()
+                    return
+                }
+
                 // number of relevant items successfully retrieved
                 val hits = returnedIndices.intersect(truthIndices).size
-                val denominator = minOf(limit, relevantTruth.size).coerceAtLeast(1)
-                val recall = hits.toDouble() / denominator
+                val recall = hits.toDouble() / relevantTruth.size
 
                 val recallFixed = (recall * 10000).toInt()
                 totalRecall.addAndGet(recallFixed.toLong())
@@ -287,15 +293,17 @@ class VectorSearch : IStressWorkload {
 
                 // Log periodic summary
                 if (count % recallLogInterval == 0L) {
+                    val skipped = skippedQueryCount.get()
                     val avgRecall = totalRecall.get().toDouble() / count / 10000
                     val minR = minRecall.get().toDouble() / 10000
                     val maxR = maxRecall.get().toDouble() / 10000
                     log.info {
-                        "Recall@$limit after $count queries: avg=%.3f, min=%.2f, max=%.2f (indexed: ${insertedIndices.size})".format(
-                            avgRecall,
-                            minR,
-                            maxR,
-                        )
+                        "Recall@$limit after $count queries: avg=%.3f, min=%.2f, max=%.2f (indexed: ${insertedIndices.size}, skipped: $skipped)"
+                            .format(
+                                avgRecall,
+                                minR,
+                                maxR,
+                            )
                     }
                 }
             }
