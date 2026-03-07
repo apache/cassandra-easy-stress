@@ -1,10 +1,10 @@
 $ bin/cassandra-easy-stress list
-WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
 Available Workloads:
 
 AllowFiltering 
 BasicTimeSeries 
 CountersWide 
+CreateDrop 
 DSESearch 
 KeyValue 
 LWT 
@@ -15,6 +15,7 @@ RandomPartitionAccess
 RangeScan 
 SAI 
 Sets 
+TxnCounter 
 UdtTimeSeries 
 
 You can run any of these workloads by running cassandra-easy-stress run WORKLOAD.

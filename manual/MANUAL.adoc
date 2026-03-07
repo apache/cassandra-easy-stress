@@ -327,6 +327,50 @@ This writes operation metrics including operation type, success/failure status, 
 
 If a directory is provided instead of a file, cassandra-easy-stress will automatically create an appropriately named file in that directory.
 
+==== Parquet Schema Reference
+
+Each row in the Parquet file represents a single operation with the following columns:
+
+.Table Parquet Schema
+|===
+|Column |Type |Description
+
+|`operation`
+|`binary (UTF8)`
+|Operation type (e.g. `Insert`, `Select`) — derived from the statement class name
+
+|`success`
+|`boolean`
+|Whether the operation completed successfully
+
+|`failure_reason`
+|`binary (UTF8)`
+|Exception class name if the operation failed (empty string on success)
+
+|`failure_stacktrace`
+|`binary (UTF8)`
+|Full stacktrace if the operation failed (empty string on success)
+
+|`request_start_time_ms`
+|`int64`
+|Epoch milliseconds when the client intended to send the request
+
+|`request_duration_ns`
+|`int64`
+|Total elapsed time in nanoseconds from request creation to response (includes queue time)
+
+|`service_start_time_ms`
+|`int64`
+|Epoch milliseconds when the request was actually sent to the database
+
+|`service_duration_ns`
+|`int64`
+|Actual database processing time in nanoseconds (excludes queue time)
+
+|===
+
+NOTE: Every operation is captured (not sampled), so file sizes grow proportionally with the number of operations.
+
 ==== Analyzing Parquet Files with DuckDB
 
 The Parquet files created by cassandra-easy-stress can be easily analyzed using DuckDB, a lightweight analytical database engine. Here are some example queries to get you started:

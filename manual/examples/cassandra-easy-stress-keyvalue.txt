@@ -1,18 +1,16 @@
 $ bin/cassandra-easy-stress run KeyValue -n 10000
-WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
-Creating easy_cass_stress: 
+Creating cassandra_easy_stress: 
 CREATE KEYSPACE
- IF NOT EXISTS easy_cass_stress
+ IF NOT EXISTS cassandra_easy_stress
  WITH replication = {'class': 'SimpleStrategy', 'replication_factor':3 }
 
-Creating schema
 Executing 10000 operations with consistency level LOCAL_ONE and serial consistency level LOCAL_SERIAL
 Connected to Cassandra cluster.
 Creating Tables
 CREATE TABLE IF NOT EXISTS keyvalue (
-                        key text PRIMARY KEY,
-                        value text
-                        ) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'} AND default_time_to_live = 0
+key text PRIMARY KEY,
+value text
+) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'} AND default_time_to_live = 0
 Preparing queries
 Initializing metrics
 Stepping rate limiter by 500.0 to 5000.0
@@ -25,10 +23,11 @@ Starting main runner
 [Thread 0]: Running the profile for 10000 iterations...
                  Writes                                  Reads                                  Deletes                       Errors
   Count  Latency (p99)  1min (req/s) |   Count  Latency (p99)  1min (req/s) |   Count  Latency (p99)  1min (req/s) |   Count  1min (errors/s)
-    624          35.88             0 |     597          34.79             0 |       0              0             0 |       0                0
-   1345          11.63           218 |    1375           8.61         224.4 |       0              0             0 |       0                0
-   2143           0.75           218 |    2075           0.67         224.4 |       0              0             0 |       0                0
-   3378           0.62        221.29 |    3342           0.64        225.71 |       0              0             0 |       0                0
-   4862           0.64        243.13 |    4858           0.57        247.99 |       0              0             0 |       0                0
-   4998           0.63        243.13 |    5002           0.62        247.99 |       0              0             0 |       0                0
+    865          51.99             0 |     800          51.71             0 |       0              0             0 |       0                0
+   1614          50.96         273.6 |    1550          50.98           257 |       0              0             0 |       0                0
+   2345          50.48         273.6 |    2319          49.42           257 |       0              0             0 |       0                0
+   3632          50.17        271.55 |    3532          45.52        256.62 |       0              0             0 |       0                0
+   5050          37.23        288.89 |    4950          31.06        274.54 |       0              0             0 |       0                0
+   5050          37.23        288.89 |    4950          31.06        274.54 |       0              0             0 |       0                0
+   5050          37.23        288.89 |    4950          31.06        274.54 |       0              0             0 |       0                0
 Stress complete, 1.

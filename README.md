@@ -53,6 +53,16 @@ Time series workload with Cassandra Authentication enabled:
     **Note**: The quotes are mandatory around the username/password
     if they contain special chararacters, which is pretty common for password
 
+# Capturing Client Latencies to Apache Parquet
+
+You can capture detailed client latency metrics to an Apache Parquet file using the `--parquet` flag:
+
+```
+bin/cassandra-easy-stress run KeyValue --duration 5m --parquet rawlog.parquet
+```
+
+This writes every operation's latency data (including request time, service time, success/failure status, and error details) to a Parquet file for post-run analysis with tools like DuckDB, Pandas, or Spark. See the [full documentation](https://apache.github.io/cassandra-easy-stress/#_capturing_client_latencies_to_apache_parquet) for schema details and example queries.
+
 # Generating docs
 
 Docs are served out of /docs and can be rebuild using `./gradlew docs`.

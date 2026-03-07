@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.23">
+<meta name="generator" content="Asciidoctor 2.0.26">
 <meta name="author" content="Jon Haddad">
 <title>cassandra-easy-stress</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
@@ -117,7 +117,6 @@ h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title str
 :not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
 pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
 pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
-pre>code{display:block}
 pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
 em em{font-style:normal}
 strong strong{font-weight:400}
@@ -220,6 +219,7 @@ table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
 .literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
 .literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
 .listingblock>.content{position:relative}
+.listingblock pre>code{display:block}
 .listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
 .listingblock:hover code[data-lang]::before{display:block}
 .listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
@@ -462,6 +462,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_running_a_stress_test_for_a_given_duration_instead_of_a_number_of_operations">Running a stress test for a given duration instead of a number of operations</a></li>
 <li><a href="#_logging">Logging</a></li>
 <li><a href="#_exporting_metrics">Exporting Metrics</a></li>
+<li><a href="#_capturing_client_latencies_to_apache_parquet">Capturing Client Latencies to Apache Parquet</a></li>
 <li><a href="#_workload_restrictions">Workload Restrictions</a></li>
 </ul>
 </li>
@@ -543,7 +544,7 @@ automatically captured by the Dropwizard metrics library.</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">$ git clone https://github.com/rustyrazorblade/cassandra-easy-stress.git
+<pre class="highlight"><code class="language-bash" data-lang="bash">$ git clone https://github.com/apache/cassandra-easy-stress.git
 $ cd cassandra-easy-stress
 $ ./gradlew shadowJar</code></pre>
 </div>
@@ -582,20 +583,18 @@ run the following command to execute 10,000 queries:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
-Creating easy_cass_stress:
+<pre class="highlight nowrap"><code class="language-bash" data-lang="bash">Creating cassandra_easy_stress:
 CREATE KEYSPACE
- IF NOT EXISTS easy_cass_stress
+ IF NOT EXISTS cassandra_easy_stress
  WITH replication = {'class': 'SimpleStrategy', 'replication_factor':3 }
 
-Creating schema
 Executing 10000 operations with consistency level LOCAL_ONE and serial consistency level LOCAL_SERIAL
 Connected to Cassandra cluster.
 Creating Tables
 CREATE TABLE IF NOT EXISTS keyvalue (
-                        key text PRIMARY KEY,
-                        value text
-                        ) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'} AND default_time_to_live = 0
+key text PRIMARY KEY,
+value text
+) WITH caching = {'keys': 'ALL', 'rows_per_partition': 'NONE'} AND default_time_to_live = 0
 Preparing queries
 Initializing metrics
 Stepping rate limiter by 500.0 to 5000.0
@@ -608,12 +607,13 @@ Starting main runner
 [Thread 0]: Running the profile for 10000 iterations...
                  Writes                                  Reads                                  Deletes                       Errors
   Count  Latency (p99)  1min (req/s) |   Count  Latency (p99)  1min (req/s) |   Count  Latency (p99)  1min (req/s) |   Count  1min (errors/s)
-    624          35.88             0 |     597          34.79             0 |       0              0             0 |       0                0
-   1345          11.63           218 |    1375           8.61         224.4 |       0              0             0 |       0                0
-   2143           0.75           218 |    2075           0.67         224.4 |       0              0             0 |       0                0
-   3378           0.62        221.29 |    3342           0.64        225.71 |       0              0             0 |       0                0
-   4862           0.64        243.13 |    4858           0.57        247.99 |       0              0             0 |       0                0
-   4998           0.63        243.13 |    5002           0.62        247.99 |       0              0             0 |       0                0
+    865          51.99             0 |     800          51.71             0 |       0              0             0 |       0                0
+   1614          50.96         273.6 |    1550          50.98           257 |       0              0             0 |       0                0
+   2345          50.48         273.6 |    2319          49.42           257 |       0              0             0 |       0                0
+   3632          50.17        271.55 |    3532          45.52        256.62 |       0              0             0 |       0                0
+   5050          37.23        288.89 |    4950          31.06        274.54 |       0              0             0 |       0                0
+   5050          37.23        288.89 |    4950          31.06        274.54 |       0              0             0 |       0                0
+   5050          37.23        288.89 |    4950          31.06        274.54 |       0              0             0 |       0                0
 Stress complete, 1.</code></pre>
 </div>
 </div>
@@ -637,7 +637,6 @@ Stress complete, 1.</code></pre>
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code class="language-bash" data-lang="bash">$ bin/cassandra-easy-stress
-WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
 Usage: cassandra-easy-stress [options] [command] [command options]
   Options:
     --help, -h
@@ -651,28 +650,25 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Consistency level for reads/writes (Defaults to LOCAL_ONE, set
             custom default with CASSANDRA_EASY_STRESS_CONSISTENCY_LEVEL).
             Default: LOCAL_ONE
-            Possible Values: [ANY, ONE, TWO, THREE, QUORUM, ALL, LOCAL_QUORUM, EACH_QUORUM, SERIAL, LOCAL_SERIAL, LOCAL_ONE]
           --compaction
             Compaction option to use.  Double quotes will auto convert to
             single for convenience.  A shorthand is also available: stcs, lcs,
             twcs.  See the full documentation for all possibilities.
             Default: &lt;empty string&gt;
           --compression
-            Compression options
+            Compression option to pass to CREATE TABLE. Example:
+            {'class':'ZstdCompressor'}
             Default: &lt;empty string&gt;
           --concurrency, -c
             DEPRECATED.  Concurrent queries allowed.  Increase for larger
             clusters.  This flag is deprecated and does nothing.
             Default: 100
           --coordinatoronly, --co
-            Coordinator only mode.  This will cause cassandra-easy-stress to round
-            robin between nodes without tokens.  Requires using
+            Coordinator only mode.  This will cause cassandra-easy-stress to
+            round robin between nodes without tokens.  Requires using
             -Djoin_ring=false in cassandra-env.sh.  When using this option you
             must only provide a coordinator to --host.
             Default: false
-          --core-connections
-            Sets the number of core connections per host
-            Default: 4
           --cql
             Additional CQL to run after the schema is created.  Use for DDL
             modifications such as creating indexes.
@@ -682,7 +678,7 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Default: &lt;empty string&gt;
           --dc
             The data center to which requests should be sent
-            Default: &lt;empty string&gt;
+            Default: datacenter1
           --deleterate, --deletes
             Deletion Rate, 0-1.  Workloads may have their own defaults.
             Default is dependent on workload.
@@ -715,8 +711,9 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Key cache setting
             Default: ALL
           --keyspace
-            Keyspace to use
-            Default: easy_cass_stress
+            Keyspace to use.  Automatically created.  Use replication option
+            to adjust options.
+            Default: cassandra_easy_stress
           --max-connections
             Sets the number of max connections per host
             Default: 8
@@ -735,6 +732,11 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Default: false
           --paging
             Override the driver's default page size.
+          --parquet
+            Capture client latency metrics to a Apache Parquet file at the
+            specified path.  If the file is a directory, the file will be
+            named rawlog.parquet within that directory
+            Default: &lt;empty string&gt;
           --partitiongenerator, --pg
             Method of generating partition keys.  Supports random, normal
             (gaussian), and sequence.
@@ -751,8 +753,10 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Override the cql port. Defaults to 9042.
             Default: 9042
           --prometheusport
-            Override the default prometheus port.  Set the default with
-            CASSANDRA_EASY_STRESS_PROM_PORT, or set to 0 to disable.
+            Override the default prometheus port.
+            Set the
+            default with CASSANDRA_EASY_STRESS_PROM_PORT, or set to 0 to
+            disable.
             Default: 9500
           --queue
             Queue Depth.  2x the rate by default.
@@ -772,7 +776,6 @@ Usage: cassandra-easy-stress [options] [command] [command options]
           --scl
             Serial consistency level
             Default: LOCAL_SERIAL
-            Possible Values: [ANY, ONE, TWO, THREE, QUORUM, ALL, LOCAL_QUORUM, EACH_QUORUM, SERIAL, LOCAL_SERIAL, LOCAL_ONE]
           --ssl
             Enable SSL
             Default: false
@@ -796,7 +799,14 @@ Usage: cassandra-easy-stress [options] [command] [command options]
       Usage: list
 
     fields      null
-      Usage: fields</code></pre>
+      Usage: fields
+
+    server      Start MCP server for tool integration
+      Usage: server [options]
+        Options:
+          -p, --port
+            Port to listen on
+            Default: 9000</code></pre>
 </div>
 </div>
 </div>
@@ -805,12 +815,12 @@ Usage: cassandra-easy-stress [options] [command] [command options]
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code>$ bin/cassandra-easy-stress list
-WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
 Available Workloads:
 
 AllowFiltering
 BasicTimeSeries
 CountersWide
+CreateDrop
 DSESearch
 KeyValue
 LWT
@@ -821,6 +831,7 @@ RandomPartitionAccess
 RangeScan
 SAI
 Sets
+TxnCounter
 UdtTimeSeries
 
 You can run any of these workloads by running cassandra-easy-stress run WORKLOAD.</code></pre>
@@ -835,11 +846,10 @@ You can run any of these workloads by running cassandra-easy-stress run WORKLOAD
 <div class="listingblock">
 <div class="content">
 <pre class="highlight"><code>$ bin/cassandra-easy-stress info KeyValue
-WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
 CREATE TABLE IF NOT EXISTS keyvalue (
-                        key text PRIMARY KEY,
-                        value text
-                        )
+key text PRIMARY KEY,
+value text
+)
 Default read rate: 0.5 (override with -r)
 
 No dynamic workload parameters.</code></pre>
@@ -1066,7 +1076,7 @@ workload to specify which fields can be used this way.</p>
 <p><code>cassandra-easy-stress</code> uses the <a href="https://logging.apache.org/">Log4J 2</a> logging framework.</p>
 </div>
 <div class="paragraph">
-<p>You can find the default log4j config inhttps://github.com/rustyrazorblade/cassandra-easy-stress/blob/main/src/main/resources/log4j2.yaml[<code>conf</code>, window="_blank"].  This should be suitable for most use cases.</p>
+<p>You can find the default log4j config in <a href="https://github.com/apache/cassandra-easy-stress/blob/main/src/main/resources/log4j2.yaml" class="bare">https://github.com/apache/cassandra-easy-stress/blob/main/src/main/resources/log4j2.yaml</a> [<code>conf</code>, window="_blank"].  This should be suitable for most use cases.</p>
 </div>
 <div class="paragraph">
 <p>To use your own logging configuration, simply set the shell variable <code>CASSANDRA_EASY_STRESS_LOG4J</code> to the path of the new logging configuration before running <code>cassandra-easy-stress</code> to point to the config file of your choice.</p>
@@ -1085,6 +1095,195 @@ workload to specify which fields can be used this way.</p>
 <h3 id="_exporting_metrics">Exporting Metrics</h3>
 <div class="paragraph">
 <p>cassandra-easy-stress automatically runs an HTTP server exporting metrics in Prometheus format on port 9501.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_capturing_client_latencies_to_apache_parquet">Capturing Client Latencies to Apache Parquet</h3>
+<div class="paragraph">
+<p>You can capture detailed client latency metrics to an Apache Parquet file using the <code>--parquet</code> flag followed by a path to a file or directory:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code>$ bin/cassandra-easy-stress run KeyValue --duration 5m --parquet rawlog.parquet</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>This writes operation metrics including operation type, success/failure status, start time, and duration to a Parquet file that can be analyzed later with data analysis tools like Pandas, Spark, DuckDB, or visualization tools that support the Parquet format.</p>
+</div>
+<div class="paragraph">
+<p>If a directory is provided instead of a file, cassandra-easy-stress will automatically create an appropriately named file in that directory.</p>
+</div>
+<div class="sect3">
+<h4 id="_parquet_schema_reference">Parquet Schema Reference</h4>
+<div class="paragraph">
+<p>Each row in the Parquet file represents a single operation with the following columns:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<caption class="title">Table 3. Table Parquet Schema</caption>
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 33.3333%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Column</th>
+<th class="tableblock halign-left valign-top">Type</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>operation</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>binary (UTF8)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Operation type (e.g. <code>Insert</code>, <code>Select</code>) — derived from the statement class name</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>success</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>boolean</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Whether the operation completed successfully</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>failure_reason</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>binary (UTF8)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Exception class name if the operation failed (empty string on success)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>failure_stacktrace</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>binary (UTF8)</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Full stacktrace if the operation failed (empty string on success)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>request_start_time_ms</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>int64</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Epoch milliseconds when the client intended to send the request</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>request_duration_ns</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>int64</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Total elapsed time in nanoseconds from request creation to response (includes queue time)</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>service_start_time_ms</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>int64</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Epoch milliseconds when the request was actually sent to the database</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>service_duration_ns</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>int64</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Actual database processing time in nanoseconds (excludes queue time)</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+Every operation is captured (not sampled), so file sizes grow proportionally with the number of operations.
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_analyzing_parquet_files_with_duckdb">Analyzing Parquet Files with DuckDB</h4>
+<div class="paragraph">
+<p>The Parquet files created by cassandra-easy-stress can be easily analyzed using DuckDB, a lightweight analytical database engine. Here are some example queries to get you started:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">-- Show summary statistics for operation latencies for every minute
+SELECT date_trunc('minute', epoch_ms(request_start_time_ms)) as minute,
+       COUNT(*) as count,
+       AVG(request_duration_ns / 1000 / 1000) as avg,
+       MIN(request_duration_ns / 1000 / 1000) as min,
+       MAX(request_duration_ns / 1000 / 1000) as max,
+       APPROX_QUANTILE(request_duration_ns / 1000 / 1000, .5) as p50,
+       APPROX_QUANTILE(request_duration_ns / 1000 / 1000, .9) as p90,
+       APPROX_QUANTILE(request_duration_ns / 1000 / 1000, .99) as p99,
+       COUNT(CASE WHEN failure_reason != '' THEN 1 END) AS errors,
+       COUNT(CASE WHEN failure_reason = 'ReadTimeoutException' THEN 1 END) AS read_timeouts,
+       COUNT(CASE WHEN failure_reason = 'WriteTimeoutException' THEN 1 END) AS write_timeouts,
+FROM read_parquet('rawlog.parquet')
+GROUP BY minute
+ORDER BY minute;
+
+┌─────────────────────┬────────┬─────────────────────┬──────────┬────────────────────┬─────────────────────┬─────────────────────┬────────────────────┬────────┬───────────────┬────────────────┐
+│       minute        │ count  │         avg         │   min    │        max         │         p50         │         p90         │        p99         │ errors │ read_timeouts │ write_timeouts │
+│      timestamp      │ int64  │       double        │  double  │       double       │       double        │       double        │       double       │ int64  │     int64     │     int64      │
+├─────────────────────┼────────┼─────────────────────┼──────────┼────────────────────┼─────────────────────┼─────────────────────┼────────────────────┼────────┼───────────────┼────────────────┤
+│ 2025-05-23 22:45:00 │ 141911 │  18.891404855317813 │ 0.088042 │        1305.993875 │ 0.23617621307864622 │  0.5454138286498701 │   755.160273634975 │      0 │             0 │              0 │
+│ 2025-05-23 22:46:00 │ 300081 │ 0.26154326542833034 │ 0.091458 │          16.620042 │  0.2198726495794396 │ 0.28866495065114356 │ 1.0759477146627234 │      0 │             0 │              0 │
+│ 2025-05-23 22:47:00 │ 300075 │ 0.29655502679997087 │ 0.089208 │          19.247875 │  0.2241928371244093 │  0.3096208807374364 │ 1.8582042492087465 │      0 │             0 │              0 │
+│ 2025-05-23 22:48:00 │ 298543 │  0.6524298801211285 │ 0.093666 │ 198.99904199999997 │ 0.22677466153454573 │ 0.33573102120265713 │  9.839418314581492 │      0 │             0 │              0 │
+│ 2025-05-23 22:49:00 │ 300053 │ 0.30696147925533085 │ 0.100167 │          64.216666 │  0.2249157848195121 │  0.3072763658664282 │ 1.6342296967730887 │      0 │             0 │              0 │
+│ 2025-05-23 22:50:00 │  24765 │  0.4530204902079576 │  0.12675 │          39.548167 │  0.2259263537252715 │ 0.30608390597020046 │ 7.7139616210838575 │      0 │             0 │              0 │
+└─────────────────────┴────────┴─────────────────────┴──────────┴────────────────────┴─────────────────────┴─────────────────────┴────────────────────┴────────┴───────────────┴────────────────┘
+
+
+-- Show error counts
+SELECT failure_reason, count(*)
+FROM read_parquet('rawlog.parquet')
+WHERE failure_reason != ''
+GROUP BY failure_reason;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>You can also use DuckDB through its various clients including Python, R, Java, and JDBC.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_understanding_request_time_vs_service_time">Understanding Request Time vs Service Time</h4>
+<div class="paragraph">
+<p>When analyzing latency data from the Parquet files, it&#8217;s important to understand the distinction between two key metrics:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Service Time</strong>: This is the actual time it takes for the database to process a request and return a response once the request is received by the database. It measures only the execution time of the operation.</p>
+</li>
+<li>
+<p><strong>Request Time</strong>: This is the total time from when the client intended to make the request until receiving the response. It includes the service time plus any queue time or delays that might have occurred before the request was actually sent to the database.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The difference between these metrics is critical for understanding coordinated omission, a common problem in performance testing where the test client doesn&#8217;t accurately capture the full latency that would be experienced by real users when the system is under load.</p>
+</div>
+<div class="paragraph">
+<p>For example, if your database is overloaded and can only process 100 operations per second, but your test is trying to send 200 operations per second:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>A naïve benchmark would only measure the service time of the operations that actually got processed, missing the fact that half the operations were delayed.</p>
+</li>
+<li>
+<p>A properly instrumented benchmark (like cassandra-easy-stress) captures the request time, which includes how long operations had to wait in a queue.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When using the Parquet files for analysis, you can examine both metrics to get a more complete picture of your system&#8217;s performance under load:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-sql" data-lang="sql">-- Compare average service time vs request time by operation type
+SELECT
+    operation,
+    AVG(service_duration_ns / 1000 / 1000) as avg_service_time_ms,
+    AVG(request_duration_ns / 1000 / 1000) as avg_request_time_ms,
+    AVG(request_duration_ns - service_duration_ns) / 1000 / 1000 as avg_queue_time_ms
+FROM read_parquet('rawlog.parquet')
+GROUP BY operation;</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>A significant difference between average request time and average service time indicates queuing or scheduling delays in your system, which can be an early warning sign of performance bottlenecks.</p>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1128,7 +1327,7 @@ workload to specify which fields can be used this way.</p>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2024-11-05 08:13:04 UTC
+Last updated 2026-03-07 10:33:40 UTC
 </div>
 </div>
 </body>
