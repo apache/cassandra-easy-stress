@@ -1,5 +1,4 @@
 $ bin/cassandra-easy-stress
-WARNING: sun.reflect.Reflection.getCallerClass is not supported. This will impact performance.
 Usage: cassandra-easy-stress [options] [command] [command options]
   Options:
     --help, -h
@@ -13,28 +12,25 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Consistency level for reads/writes (Defaults to LOCAL_ONE, set 
             custom default with CASSANDRA_EASY_STRESS_CONSISTENCY_LEVEL).
             Default: LOCAL_ONE
-            Possible Values: [ANY, ONE, TWO, THREE, QUORUM, ALL, LOCAL_QUORUM, EACH_QUORUM, SERIAL, LOCAL_SERIAL, LOCAL_ONE]
           --compaction
             Compaction option to use.  Double quotes will auto convert to 
             single for convenience.  A shorthand is also available: stcs, lcs, 
             twcs.  See the full documentation for all possibilities.
             Default: <empty string>
           --compression
-            Compression options
+            Compression option to pass to CREATE TABLE. Example: 
+            {'class':'ZstdCompressor'} 
             Default: <empty string>
           --concurrency, -c
             DEPRECATED.  Concurrent queries allowed.  Increase for larger 
             clusters.  This flag is deprecated and does nothing.
             Default: 100
           --coordinatoronly, --co
-            Coordinator only mode.  This will cause cassandra-easy-stress to round 
-            robin between nodes without tokens.  Requires using 
+            Coordinator only mode.  This will cause cassandra-easy-stress to 
+            round robin between nodes without tokens.  Requires using 
             -Djoin_ring=false in cassandra-env.sh.  When using this option you 
             must only provide a coordinator to --host.
             Default: false
-          --core-connections
-            Sets the number of core connections per host
-            Default: 4
           --cql
             Additional CQL to run after the schema is created.  Use for DDL 
             modifications such as creating indexes.
@@ -44,7 +40,7 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Default: <empty string>
           --dc
             The data center to which requests should be sent
-            Default: <empty string>
+            Default: datacenter1
           --deleterate, --deletes
             Deletion Rate, 0-1.  Workloads may have their own defaults.  
             Default is dependent on workload.
@@ -77,8 +73,9 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Key cache setting
             Default: ALL
           --keyspace
-            Keyspace to use
-            Default: easy_cass_stress
+            Keyspace to use.  Automatically created.  Use replication option 
+            to adjust options.
+            Default: cassandra_easy_stress
           --max-connections
             Sets the number of max connections per host
             Default: 8
@@ -98,8 +95,8 @@ Usage: cassandra-easy-stress [options] [command] [command options]
           --paging
             Override the driver's default page size.
           --parquet
-            Capture client latency metrics to a Apache Parquet file at the
-            specified path.  If the file is a directory, the file will be
+            Capture client latency metrics to a Apache Parquet file at the 
+            specified path.  If the file is a directory, the file will be 
             named rawlog.parquet within that directory
             Default: <empty string>
           --partitiongenerator, --pg
@@ -118,8 +115,10 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Override the cql port. Defaults to 9042.
             Default: 9042
           --prometheusport
-            Override the default prometheus port.  Set the default with 
-            CASSANDRA_EASY_STRESS_PROM_PORT, or set to 0 to disable.
+            Override the default prometheus port.  
+            Set the 
+            default with CASSANDRA_EASY_STRESS_PROM_PORT, or set to 0 to 
+            disable. 
             Default: 9500
           --queue
             Queue Depth.  2x the rate by default.
@@ -139,7 +138,6 @@ Usage: cassandra-easy-stress [options] [command] [command options]
           --scl
             Serial consistency level
             Default: LOCAL_SERIAL
-            Possible Values: [ANY, ONE, TWO, THREE, QUORUM, ALL, LOCAL_QUORUM, EACH_QUORUM, SERIAL, LOCAL_SERIAL, LOCAL_ONE]
           --ssl
             Enable SSL
             Default: false
@@ -164,5 +162,12 @@ Usage: cassandra-easy-stress [options] [command] [command options]
 
     fields      null
       Usage: fields
+
+    server      Start MCP server for tool integration
+      Usage: server [options]
+        Options:
+          -p, --port
+            Port to listen on
+            Default: 9000
 
 
