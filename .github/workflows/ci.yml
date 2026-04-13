@@ -215,7 +215,7 @@ jobs:
           git push --delete origin latest || true
 
       - name: Publish test artifact
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: latest
           name: "Test Artifacts (Not an Official Release)"
