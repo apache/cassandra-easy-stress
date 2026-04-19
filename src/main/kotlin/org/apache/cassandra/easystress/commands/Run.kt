@@ -241,7 +241,10 @@ class Run(
             ConsistencyLevelConverter().convert(it)
         } ?: ConsistencyLevel.LOCAL_ONE
 
-    @Parameter(names = ["--scl"], description = "Serial consistency level")
+    @Parameter(names = ["--scl"],
+        description = "Serial consistency level",
+        converter = ConsistencyLevelConverter::class,
+    )
     @Serializable(with = ConsistencyLevelSerializer::class)
     var serialConsistencyLevel =
         System.getenv("CASSANDRA_EASY_STRESS_SERIAL_CONSISTENCY_LEVEL")?.let {
