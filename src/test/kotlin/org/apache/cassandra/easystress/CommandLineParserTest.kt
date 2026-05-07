@@ -17,6 +17,7 @@
  */
 package org.apache.cassandra.easystress
 
+import com.datastax.oss.driver.api.core.ConsistencyLevel
 import org.apache.cassandra.easystress.commands.Run
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -28,5 +29,18 @@ internal class CommandLineParserTest {
         val result = CommandLineParser.parse(args)
         assertThat(result.getParsedCommand()).isEqualToIgnoringCase("run")
         assertThat(result.getCommandInstance()).isInstanceOf(Run::class.java)
+    }
+
+    @Test
+    fun testSerialConsistencyLevelParsing() {
+        val args = arrayOf("run", "BasicTimeSeries", "--cl", "QUORUM", "--scl", "SERIAL")
+        val result = CommandLineParser.parse(args)
+
+        assertThat(result.getParsedCommand()).isEqualToIgnoringCase("run")
+        assertThat(result.getCommandInstance()).isInstanceOf(Run::class.java)
+
+        val runCommand = result.getCommandInstance() as Run
+        assertThat(runCommand.consistencyLevel).isEqualTo(ConsistencyLevel.QUORUM)
+        assertThat(runCommand.serialConsistencyLevel).isEqualTo(ConsistencyLevel.SERIAL)
     }
 }
