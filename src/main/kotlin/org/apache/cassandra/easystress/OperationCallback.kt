@@ -65,13 +65,15 @@ class OperationCallback(
         // TODO (visibility): include details about paging?
         context.collect(op, Either.Left(result!!), startNanos, endNanos)
 
-        // do the callback for mutations
-        // might extend this to select, but I can't see a reason for it now
+        // do the callback for mutations and selects
         when (op) {
             is Operation.Mutation -> {
                 runner.onSuccess(op, result)
             }
             is Operation.DDL -> {
+                runner.onSuccess(op, result)
+            }
+            is Operation.SelectStatement -> {
                 runner.onSuccess(op, result)
             }
             is Operation.Stop -> {

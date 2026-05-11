@@ -87,6 +87,9 @@ dependencies {
     implementation libs.hadoop.common
     implementation libs.hadoop.mapreduce.client.common
 
+    // HDF5 support for Vector Search
+    implementation libs.jhdf
+
     // MCP Server dependencies
     implementation (libs.mcp.sdk) {
         exclude group: 'org.slf4j', module: 'slf4j-api'
