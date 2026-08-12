@@ -57,6 +57,11 @@ interface IStressRunner {
         op: Operation.DDL,
         result: AsyncResultSet?,
     ) { }
+
+    fun onSuccess(
+        op: Operation.SelectStatement,
+        result: AsyncResultSet?,
+    ) { }
 }
 
 /**
@@ -131,6 +136,7 @@ sealed class Operation(
 
     class SelectStatement(
         bound: BoundStatement,
+        val callbackPayload: Any? = null,
     ) : Operation(bound)
 
     class Deletion(
