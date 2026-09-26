@@ -19,13 +19,10 @@ package org.apache.cassandra.easystress.commands
 
 import com.beust.jcommander.Parameter
 import com.beust.jcommander.Parameters
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.route
@@ -37,7 +34,6 @@ import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
-import kotlinx.serialization.json.Json
 import org.apache.cassandra.easystress.server.StressTestManager
 import org.apache.cassandra.easystress.server.tools.FieldsTool
 import org.apache.cassandra.easystress.server.tools.ListWorkloadsTool
@@ -195,16 +191,6 @@ class Server : IStressCommand {
      */
     private fun getServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> =
         embeddedServer(CIO, port = port) {
-            install(ContentNegotiation) {
-                json(
-                    Json {
-                        prettyPrint = true
-                        isLenient = true
-                        ignoreUnknownKeys = true
-                    },
-                )
-            }
-
             // Streamable HTTP on /mcp
             mcpStreamableHttp(
                 path = "/mcp",
