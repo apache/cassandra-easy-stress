@@ -25,12 +25,10 @@ import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
-import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.sse.ServerSentEvent
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
 import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.Implementation
 import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
@@ -56,7 +54,6 @@ import kotlin.time.Duration.Companion.seconds
  * The server provides:
  * - HTTP endpoint on configurable port (default: 9000)
  * - Streamable HTTP on `/mcp` for MCP communication
- * - Deprecated SSE transport on `/sse` (and root) for backwards compatibility
  * - JSON-based tool invocation and responses
  * - Thread-safe execution of concurrent tool calls
  *
@@ -176,19 +173,6 @@ class Server : IStressCommand {
         return server
     }
 
-    /**
-     * Creates and configures the embedded Ktor server.
-     *
-     * Configures:
-     * - CIO engine for async I/O
-     * - JSON content negotiation with lenient parsing
-     * - SSE plugin support
-     * - Basic HTTP route for health checks
-     * - Streamable HTTP MCP endpoint on `/mcp`
-     * - Deprecated SSE MCP endpoints on `/sse` and root for backwards compatibility
-     *
-     * @return Configured but not yet started embedded server instance
-     */
     private fun getServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> =
         embeddedServer(CIO, port = port) {
             // Streamable HTTP on /mcp
@@ -205,13 +189,6 @@ class Server : IStressCommand {
             routing {
                 get("/") {
                     call.respondText("MCP Server is running")
-                }
-
-                // Deprecated SSE routes
-                route("/sse") {
-                    mcp {
-                        createMcpServer()
-                    }
                 }
             }
         }

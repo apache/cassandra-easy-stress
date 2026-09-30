@@ -92,7 +92,7 @@ class MCPServerTest {
     }
 
     @Test
-    fun `should have MCP Streamable HTTP and SSE endpoints`() {
+    fun `should have MCP Streamable HTTP endpoint`() {
         server = Server()
         server!!.port = 8182
 
