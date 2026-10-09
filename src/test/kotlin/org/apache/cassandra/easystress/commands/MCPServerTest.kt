@@ -148,6 +148,92 @@ class MCPServerTest {
     }
 
     @Test
+    fun `GET stream should carry heartbeats as comments and only JSON-RPC in data fields`() {
+        server = Server()
+        server!!.port = 8183
+
+        val serverThread =
+            Thread {
+                try {
+                    server!!.execute()
+                } catch (e: Exception) {
+                    // Expected when stopping
+                }
+            }
+        serverThread.start()
+
+        // Give the server a moment to start
+        Thread.sleep(2000)
+
+        val initialize =
+            mcpPost(
+                8183,
+                null,
+                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",""" +
+                    """"capabilities":{},"clientInfo":{"name":"test","version":"1"}}}""",
+            )
+        val sessionId = initialize.getHeaderField("mcp-session-id")
+        initialize.disconnect()
+        assertThat(sessionId).isNotBlank()
+
+        val initialized = mcpPost(8183, sessionId, """{"jsonrpc":"2.0","method":"notifications/initialized"}""")
+        assertThat(initialized.responseCode).isEqualTo(202)
+        initialized.disconnect()
+
+        val stream = URL("http://localhost:8183/mcp").openConnection() as HttpURLConnection
+        stream.requestMethod = "GET"
+        stream.setRequestProperty("Accept", "text/event-stream")
+        stream.setRequestProperty("Mcp-Session-Id", sessionId)
+        stream.setRequestProperty("MCP-Protocol-Version", "2025-06-18")
+        stream.connectTimeout = 1000
+        stream.readTimeout = 3000
+        assertThat(stream.responseCode).isEqualTo(200)
+
+        // Strict clients parse every data field as a JSON-RPC message, so a heartbeat
+        // sent as data makes them drop the connection.
+        val dataFields = mutableListOf<String>()
+        var heartbeats = 0
+        val deadline = System.currentTimeMillis() + 3000
+        stream.inputStream.bufferedReader().use { reader ->
+            while (heartbeats < 2 && System.currentTimeMillis() < deadline) {
+                val line = reader.readLine() ?: break
+                when {
+                    line.startsWith("data:") -> dataFields.add(line.removePrefix("data:").trim())
+                    line.startsWith(":") -> heartbeats++
+                }
+            }
+        }
+        stream.disconnect()
+
+        assertThat(heartbeats).isGreaterThanOrEqualTo(2)
+        assertThat(dataFields.filter { it.isNotEmpty() }).allSatisfy { data ->
+            val message = Json.parseToJsonElement(data).jsonObject
+            assertThat(message["jsonrpc"]?.jsonPrimitive?.content).isEqualTo("2.0")
+        }
+
+        server!!.stop()
+        serverThread.join(5000)
+    }
+
+    private fun mcpPost(
+        port: Int,
+        sessionId: String?,
+        body: String,
+    ): HttpURLConnection {
+        val connection = URL("http://localhost:$port/mcp").openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Accept", "application/json, text/event-stream")
+        connection.setRequestProperty("MCP-Protocol-Version", "2025-06-18")
+        sessionId?.let { connection.setRequestProperty("Mcp-Session-Id", it) }
+        connection.connectTimeout = 1000
+        connection.readTimeout = 5000
+        connection.outputStream.use { it.write(body.toByteArray()) }
+        return connection
+    }
+
+    @Test
     fun `list_workloads tool handler should return CallToolResult with JSON content`() {
         // This test directly tests the tool handler logic
         // by simulating what happens when the tool is called

@@ -135,16 +135,12 @@ class Server : IStressCommand {
         )
 
     /**
-     * Creates and configures the embedded Ktor server.
+     * Creates an MCP server instance with all available tools registered.
      *
-     * Configures:
-     * - CIO engine for async I/O
-     * - JSON content negotiation with lenient parsing
-     * - Basic HTTP route for health checks
-     * - MCP protocol support with SSE transport
-     * - Registration of all available tools
+     * The Streamable HTTP transport calls this factory, possibly more than once.  Every
+     * instance shares [tools], so all clients see the same [StressTestManager].
      *
-     * @return Configured but not yet started embedded server instance
+     * @return MCP server advertising the tools capability
      */
     private fun createMcpServer(): Server {
         val server =
@@ -173,6 +169,16 @@ class Server : IStressCommand {
         return server
     }
 
+    /**
+     * Creates and configures the embedded Ktor server.
+     *
+     * Configures:
+     * - CIO engine for async I/O
+     * - MCP Streamable HTTP transport on `/mcp`, with an SSE heartbeat every second
+     * - Basic HTTP route on `/` for health checks
+     *
+     * @return Configured but not yet started embedded server instance
+     */
     private fun getServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> =
         embeddedServer(CIO, port = port) {
             // Streamable HTTP on /mcp
@@ -180,7 +186,8 @@ class Server : IStressCommand {
                 path = "/mcp",
                 sseHeartbeatConfig = {
                     period = 1.seconds
-                    event = ServerSentEvent("heartbeat")
+                    // Clients parse every data field as JSON-RPC, so the heartbeat must be a comment.
+                    event = ServerSentEvent(comments = "heartbeat")
                 },
             ) {
                 createMcpServer()
