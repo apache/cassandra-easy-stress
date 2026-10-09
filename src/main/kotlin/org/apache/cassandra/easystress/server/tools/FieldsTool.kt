@@ -17,12 +17,13 @@
  */
 package org.apache.cassandra.easystress.server.tools
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.RegisteredTool
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.addJsonObject
@@ -65,11 +66,11 @@ val FieldsTool =
                 name = "fields",
                 title = null,
                 description = "List all available field generators",
-                inputSchema = Tool.Input(properties = EmptyJsonObject),
+                inputSchema = ToolSchema(properties = EmptyJsonObject),
                 outputSchema = null,
                 annotations = null,
             ),
-        handler = ::handleFields,
+        handler = { request -> handleFields(request) },
     )
 
 private suspend fun handleFields(request: CallToolRequest): CallToolResult =

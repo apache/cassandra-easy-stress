@@ -20,9 +20,10 @@ package org.apache.cassandra.easystress.commands
 import com.beust.jcommander.DynamicParameter
 import com.beust.jcommander.Parameter
 import com.beust.jcommander.Parameters
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -91,7 +92,7 @@ class MCPServerTest {
     }
 
     @Test
-    fun `should have MCP SSE endpoint`() {
+    fun `should have MCP Streamable HTTP endpoint`() {
         server = Server()
         server!!.port = 8182
 
@@ -108,9 +109,8 @@ class MCPServerTest {
         // Give the server a moment to start
         Thread.sleep(2000)
 
-        // The MCP SDK automatically sets up SSE at the root with proper headers
-        // We just verify the server is running, as the MCP endpoint is handled by the SDK
-        val serverRunning =
+        // Verify root endpoint
+        val rootRunning =
             try {
                 val url = URL("http://localhost:8182/")
                 val connection = url.openConnection() as HttpURLConnection
@@ -123,12 +123,114 @@ class MCPServerTest {
             } catch (e: Exception) {
                 false
             }
+        assertThat(rootRunning).isTrue()
 
-        assertThat(serverRunning).isTrue()
+        // Verify /mcp endpoint responds
+        val mcpEndpointReachable =
+            try {
+                val url = URL("http://localhost:8182/mcp")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 1000
+                connection.readTimeout = 1000
+                val responseCode = connection.responseCode
+                connection.disconnect()
+                // GET on /mcp without session or query may return 400 or 405 or 200, which confirms the route is active
+                responseCode > 0
+            } catch (e: Exception) {
+                false
+            }
+        assertThat(mcpEndpointReachable).isTrue()
 
         // Stop the server
         server!!.stop()
         serverThread.join(5000)
+    }
+
+    @Test
+    fun `GET stream should carry heartbeats as comments and only JSON-RPC in data fields`() {
+        server = Server()
+        server!!.port = 8183
+
+        val serverThread =
+            Thread {
+                try {
+                    server!!.execute()
+                } catch (e: Exception) {
+                    // Expected when stopping
+                }
+            }
+        serverThread.start()
+
+        // Give the server a moment to start
+        Thread.sleep(2000)
+
+        val initialize =
+            mcpPost(
+                8183,
+                null,
+                """{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18",""" +
+                    """"capabilities":{},"clientInfo":{"name":"test","version":"1"}}}""",
+            )
+        val sessionId = initialize.getHeaderField("mcp-session-id")
+        initialize.disconnect()
+        assertThat(sessionId).isNotBlank()
+
+        val initialized = mcpPost(8183, sessionId, """{"jsonrpc":"2.0","method":"notifications/initialized"}""")
+        assertThat(initialized.responseCode).isEqualTo(202)
+        initialized.disconnect()
+
+        val stream = URL("http://localhost:8183/mcp").openConnection() as HttpURLConnection
+        stream.requestMethod = "GET"
+        stream.setRequestProperty("Accept", "text/event-stream")
+        stream.setRequestProperty("Mcp-Session-Id", sessionId)
+        stream.setRequestProperty("MCP-Protocol-Version", "2025-06-18")
+        stream.connectTimeout = 1000
+        stream.readTimeout = 3000
+        assertThat(stream.responseCode).isEqualTo(200)
+
+        // Strict clients parse every data field as a JSON-RPC message, so a heartbeat
+        // sent as data makes them drop the connection.
+        val dataFields = mutableListOf<String>()
+        var heartbeats = 0
+        val deadline = System.currentTimeMillis() + 3000
+        stream.inputStream.bufferedReader().use { reader ->
+            while (heartbeats < 2 && System.currentTimeMillis() < deadline) {
+                val line = reader.readLine() ?: break
+                when {
+                    line.startsWith("data:") -> dataFields.add(line.removePrefix("data:").trim())
+                    line.startsWith(":") -> heartbeats++
+                }
+            }
+        }
+        stream.disconnect()
+
+        assertThat(heartbeats).isGreaterThanOrEqualTo(2)
+        assertThat(dataFields.filter { it.isNotEmpty() }).allSatisfy { data ->
+            val message = Json.parseToJsonElement(data).jsonObject
+            assertThat(message["jsonrpc"]?.jsonPrimitive?.content).isEqualTo("2.0")
+        }
+
+        server!!.stop()
+        serverThread.join(5000)
+    }
+
+    private fun mcpPost(
+        port: Int,
+        sessionId: String?,
+        body: String,
+    ): HttpURLConnection {
+        val connection = URL("http://localhost:$port/mcp").openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("Accept", "application/json, text/event-stream")
+        connection.setRequestProperty("MCP-Protocol-Version", "2025-06-18")
+        sessionId?.let { connection.setRequestProperty("Mcp-Session-Id", it) }
+        connection.connectTimeout = 1000
+        connection.readTimeout = 5000
+        connection.outputStream.use { it.write(body.toByteArray()) }
+        return connection
     }
 
     @Test
@@ -177,8 +279,11 @@ class MCPServerTest {
         // Create a mock request
         val mockRequest =
             CallToolRequest(
-                name = "list_workloads",
-                arguments = buildJsonObject {},
+                params =
+                    CallToolRequestParams(
+                        name = "list_workloads",
+                        arguments = buildJsonObject {},
+                    ),
             )
 
         // Call the handler
@@ -186,7 +291,7 @@ class MCPServerTest {
 
         // Verify the result
         assertThat(result).isNotNull()
-        assertThat(result.isError).isFalse()
+        assertThat(result.isError ?: false).isFalse()
         assertThat(result.content).isNotEmpty()
 
         // Verify the content is valid JSON
@@ -277,11 +382,14 @@ class MCPServerTest {
             val firstWorkload = workloads.entries.first().key
             val mockRequest =
                 CallToolRequest(
-                    name = "info",
-                    arguments =
-                        buildJsonObject {
-                            put("workload", firstWorkload)
-                        },
+                    params =
+                        CallToolRequestParams(
+                            name = "info",
+                            arguments =
+                                buildJsonObject {
+                                    put("workload", firstWorkload)
+                                },
+                        ),
                 )
 
             val result = toolHandler(mockRequest)
@@ -350,8 +458,11 @@ class MCPServerTest {
         // Create a mock request
         val mockRequest =
             CallToolRequest(
-                name = "fields",
-                arguments = buildJsonObject {},
+                params =
+                    CallToolRequestParams(
+                        name = "fields",
+                        arguments = buildJsonObject {},
+                    ),
             )
 
         // Call the handler
@@ -359,7 +470,7 @@ class MCPServerTest {
 
         // Verify the result
         assertThat(result).isNotNull()
-        assertThat(result.isError).isFalse()
+        assertThat(result.isError ?: false).isFalse()
         assertThat(result.content).isNotEmpty()
 
         // Verify the content is valid JSON with generators

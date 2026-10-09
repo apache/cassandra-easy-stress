@@ -17,8 +17,10 @@
  */
 package org.apache.cassandra.easystress.server
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
+import io.mockk.mockk
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
@@ -43,8 +45,8 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("duration", JsonPrimitive(10))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            manager.getRunTool().handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            manager.getRunTool().handler(mockk(relaxed = true), request)
 
             // Should be running
             assertThat(manager.isRunning()).isTrue()
@@ -69,8 +71,8 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("duration", JsonPrimitive(10))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            manager.getRunTool().handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            manager.getRunTool().handler(mockk(relaxed = true), request)
 
             // Should have a thread
             assertThat(manager.getCurrentThread()).isNotNull()
@@ -96,8 +98,8 @@ class StressTestManagerTest {
                     put("duration", JsonPrimitive(10))
                     put("threads", JsonPrimitive(2))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            manager.getRunTool().handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            manager.getRunTool().handler(mockk(relaxed = true), request)
 
             // Should have a command
             val command = manager.getCurrentCommand()
@@ -128,8 +130,8 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("duration", JsonPrimitive(10))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            manager.getRunTool().handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            manager.getRunTool().handler(mockk(relaxed = true), request)
 
             val afterStart = System.currentTimeMillis()
 
@@ -158,14 +160,17 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("duration", JsonPrimitive(10))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            manager.getRunTool().handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            manager.getRunTool().handler(mockk(relaxed = true), request)
 
             // Should be running
             assertThat(manager.getStatus()).isEqualTo("running")
 
             // Stop the test
-            manager.getStopTool().handler(CallToolRequest(name = "stop", arguments = EmptyJsonObject))
+            manager.getStopTool().handler(
+                mockk(relaxed = true),
+                CallToolRequest(CallToolRequestParams(name = "stop", arguments = EmptyJsonObject)),
+            )
 
             // Should be stopped
             assertThat(manager.getStatus()).isEqualTo("stopped")
@@ -183,8 +188,8 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("duration", JsonPrimitive(10))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            manager.getRunTool().handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            manager.getRunTool().handler(mockk(relaxed = true), request)
 
             // Verify state is populated
             assertThat(manager.isRunning()).isTrue()
@@ -217,11 +222,11 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("iterations", JsonPrimitive(1))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            val result = runTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            val result = runTool.handler(mockk(relaxed = true), request)
 
             // Should start successfully (background thread will fail when connecting, but that's expected in unit test)
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             assertThat(result.content).isNotEmpty()
 
             // Clean up - stop the manager to release lock
@@ -241,15 +246,15 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("iterations", JsonPrimitive(1))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
 
             // First call should succeed
-            val result1 = runTool.handler(request)
-            assertThat(result1.isError).isFalse()
+            val result1 = runTool.handler(mockk(relaxed = true), request)
+            assertThat(result1.isError ?: false).isFalse()
 
             // Second call should fail with "already running" error
-            val result2 = runTool.handler(request)
-            assertThat(result2.isError).isTrue()
+            val result2 = runTool.handler(mockk(relaxed = true), request)
+            assertThat(result2.isError ?: false).isTrue()
             assertThat(result2.content).isNotEmpty()
             assertThat(result2.content.first().toString()).contains("already running")
 
@@ -263,10 +268,10 @@ class StressTestManagerTest {
             val manager = StressTestManager()
             val stopTool = manager.getStopTool()
 
-            val request = CallToolRequest(name = "stop", arguments = EmptyJsonObject)
-            val result = stopTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "stop", arguments = EmptyJsonObject))
+            val result = stopTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isTrue()
+            assertThat(result.isError ?: false).isTrue()
             assertThat(result.content).isNotEmpty()
             assertThat(result.content.first().toString()).contains("No stress test is currently running")
         }
@@ -285,17 +290,17 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("iterations", JsonPrimitive(1))
                 }
-            val runRequest = CallToolRequest(name = "run", arguments = runArgs)
-            runTool.handler(runRequest)
+            val runRequest = CallToolRequest(CallToolRequestParams(name = "run", arguments = runArgs))
+            runTool.handler(mockk(relaxed = true), runRequest)
 
             // Verify test is running
             assertThat(manager.isRunning()).isTrue()
 
             // Stop the test
-            val stopRequest = CallToolRequest(name = "stop", arguments = EmptyJsonObject)
-            val result = stopTool.handler(stopRequest)
+            val stopRequest = CallToolRequest(CallToolRequestParams(name = "stop", arguments = EmptyJsonObject))
+            val result = stopTool.handler(mockk(relaxed = true), stopRequest)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             assertThat(result.content).isNotEmpty()
             assertThat(result.content.first().toString()).contains("stopped successfully")
 
@@ -310,10 +315,10 @@ class StressTestManagerTest {
             val manager = StressTestManager()
             val statusTool = manager.getStatusTool()
 
-            val request = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val result = statusTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val result = statusTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             assertThat(result.content).isNotEmpty()
         }
 
@@ -332,18 +337,18 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("iterations", JsonPrimitive(1))
                 }
-            val runRequest = CallToolRequest(name = "run", arguments = runArgs)
-            runTool.handler(runRequest)
+            val runRequest = CallToolRequest(CallToolRequestParams(name = "run", arguments = runArgs))
+            runTool.handler(mockk(relaxed = true), runRequest)
 
             // Stop the test
-            val stopRequest = CallToolRequest(name = "stop", arguments = EmptyJsonObject)
-            stopTool.handler(stopRequest)
+            val stopRequest = CallToolRequest(CallToolRequestParams(name = "stop", arguments = EmptyJsonObject))
+            stopTool.handler(mockk(relaxed = true), stopRequest)
 
             // Check status shows "stopped" message
-            val statusRequest = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val result = statusTool.handler(statusRequest)
+            val statusRequest = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val result = statusTool.handler(mockk(relaxed = true), statusRequest)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             assertThat(result.content).isNotEmpty()
             val statusText = result.content.first().toString()
             assertThat(statusText).contains("\"status\":\"stopped\"")
@@ -366,11 +371,11 @@ class StressTestManagerTest {
                     put("duration", JsonPrimitive(10))
                     put("threads", JsonPrimitive(1))
                 }
-            val firstRunRequest = CallToolRequest(name = "run", arguments = firstTestArgs)
-            val startResult1 = runTool.handler(firstRunRequest)
+            val firstRunRequest = CallToolRequest(CallToolRequestParams(name = "run", arguments = firstTestArgs))
+            val startResult1 = runTool.handler(mockk(relaxed = true), firstRunRequest)
 
             // Verify first test started successfully
-            assertThat(startResult1.isError).isFalse()
+            assertThat(startResult1.isError ?: false).isFalse()
             assertThat(startResult1.content.first().toString()).contains("started successfully")
             assertThat(manager.isRunning()).isTrue()
             assertThat(manager.getStatus()).isEqualTo("running")
@@ -384,8 +389,8 @@ class StressTestManagerTest {
             }
 
             // 2. STOP FIRST TEST: Stop the running test (or verify it stopped on its own)
-            val stopRequest = CallToolRequest(name = "stop", arguments = EmptyJsonObject)
-            val stopResult = stopTool.handler(stopRequest)
+            val stopRequest = CallToolRequest(CallToolRequestParams(name = "stop", arguments = EmptyJsonObject))
+            val stopResult = stopTool.handler(mockk(relaxed = true), stopRequest)
 
             // Verify stop was called and manager is no longer running
             // Note: The test might have already failed and stopped on its own, which is fine
@@ -400,11 +405,11 @@ class StressTestManagerTest {
                     put("duration", JsonPrimitive(2))
                     put("threads", JsonPrimitive(1))
                 }
-            val secondRunRequest = CallToolRequest(name = "run", arguments = secondTestArgs)
-            val startResult2 = runTool.handler(secondRunRequest)
+            val secondRunRequest = CallToolRequest(CallToolRequestParams(name = "run", arguments = secondTestArgs))
+            val startResult2 = runTool.handler(mockk(relaxed = true), secondRunRequest)
 
             // Verify second test started successfully
-            assertThat(startResult2.isError).isFalse()
+            assertThat(startResult2.isError ?: false).isFalse()
             assertThat(startResult2.content.first().toString()).contains("started successfully")
             assertThat(manager.isRunning()).isTrue()
             assertThat(manager.getStatus()).isEqualTo("running")
@@ -413,19 +418,22 @@ class StressTestManagerTest {
             assertThat(secondTestStartTime).isNotNull()
 
             // 4. VERIFY STATUS DURING RUN: Check status while second test is running
-            val statusRequest = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val statusResult = statusTool.handler(statusRequest)
+            val statusRequest = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val statusResult = statusTool.handler(mockk(relaxed = true), statusRequest)
 
-            assertThat(statusResult.isError).isFalse()
+            assertThat(statusResult.isError ?: false).isFalse()
             val statusText = statusResult.content.first().toString()
             assertThat(statusText).contains("\"status\":\"running\"")
             assertThat(statusText).contains("\"is_running\":true")
             assertThat(statusText).contains("currently running")
 
             // 5. LET SECOND TEST COMPLETE: Wait for test to finish naturally
-            // The test will fail to connect but that's expected - it should still complete the lifecycle
+            // The test will fail to connect or run for 2s duration - wait for completion
             withContext(Dispatchers.IO) {
-                Thread.sleep(3000)
+                for (i in 1..50) {
+                    if (!manager.isRunning()) break
+                    Thread.sleep(100)
+                }
             }
 
             // Verify test completed or stopped (either is acceptable since connection will fail)
@@ -435,10 +443,10 @@ class StressTestManagerTest {
             assertThat(finalStatus).matches("^(completed|stopped|failed:.*)$")
 
             // 6. VERIFY POST-COMPLETION STATUS
-            val finalStatusRequest = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val finalStatusResult = statusTool.handler(finalStatusRequest)
+            val finalStatusRequest = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val finalStatusResult = statusTool.handler(mockk(relaxed = true), finalStatusRequest)
 
-            assertThat(finalStatusResult.isError).isFalse()
+            assertThat(finalStatusResult.isError ?: false).isFalse()
             val finalStatusText = finalStatusResult.content.first().toString()
             assertThat(finalStatusText).contains("\"is_running\":false")
             assertThat(finalStatusText.contains("Last stress test") || finalStatusText.contains("Status:")).isTrue()
@@ -462,14 +470,14 @@ class StressTestManagerTest {
                     put("duration", JsonPrimitive(10))
                     put("threads", JsonPrimitive(3))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            runTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            runTool.handler(mockk(relaxed = true), request)
 
             // Check status immediately while still running (before connection fails)
-            val statusRequest = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val result = statusTool.handler(statusRequest)
+            val statusRequest = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val result = statusTool.handler(mockk(relaxed = true), statusRequest)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             val statusText = result.content.first().toString()
 
             // Verify running state
@@ -502,10 +510,10 @@ class StressTestManagerTest {
             val manager = StressTestManager()
             val statusTool = manager.getStatusTool()
 
-            val request = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val result = statusTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val result = statusTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             val statusText = result.content.first().toString()
 
             assertThat(statusText).contains("\"status\":\"idle\"")
@@ -522,10 +530,10 @@ class StressTestManagerTest {
             manager.setStatus("completed")
 
             val statusTool = manager.getStatusTool()
-            val request = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val result = statusTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val result = statusTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             val statusText = result.content.first().toString()
 
             assertThat(statusText).contains("\"status\":\"completed\"")
@@ -542,10 +550,10 @@ class StressTestManagerTest {
             manager.setStatus("failed: Connection refused")
 
             val statusTool = manager.getStatusTool()
-            val request = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val result = statusTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val result = statusTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             val statusText = result.content.first().toString()
 
             assertThat(statusText).contains("\"status\":\"failed: Connection refused\"")
@@ -568,8 +576,8 @@ class StressTestManagerTest {
                     put("host", JsonPrimitive("127.0.0.1"))
                     put("duration", JsonPrimitive(1))
                 }
-            val request = CallToolRequest(name = "run", arguments = arguments)
-            runTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "run", arguments = arguments))
+            runTool.handler(mockk(relaxed = true), request)
 
             val startTime = manager.getStartTime()
 
@@ -578,10 +586,10 @@ class StressTestManagerTest {
             manager.setStatus("stopped")
 
             // Get status after stopping
-            val statusRequest = CallToolRequest(name = "status", arguments = EmptyJsonObject)
-            val result = statusTool.handler(statusRequest)
+            val statusRequest = CallToolRequest(CallToolRequestParams(name = "status", arguments = EmptyJsonObject))
+            val result = statusTool.handler(mockk(relaxed = true), statusRequest)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             val statusText = result.content.first().toString()
 
             assertThat(statusText).contains("\"is_running\":false")

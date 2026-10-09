@@ -17,10 +17,12 @@
  */
 package org.apache.cassandra.easystress.server.tools
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.mockk.mockk
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -35,10 +37,10 @@ class FieldsToolTest {
     @Test
     fun `should list available field generators`() =
         runTest {
-            val request = CallToolRequest(name = "fields", arguments = EmptyJsonObject)
-            val result = FieldsTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "fields", arguments = EmptyJsonObject))
+            val result = FieldsTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             assertThat(result.content).isNotEmpty()
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
@@ -59,8 +61,8 @@ class FieldsToolTest {
     @Test
     fun `should include name and description for each generator`() =
         runTest {
-            val request = CallToolRequest(name = "fields", arguments = EmptyJsonObject)
-            val result = FieldsTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "fields", arguments = EmptyJsonObject))
+            val result = FieldsTool.handler(mockk(relaxed = true), request)
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
             val generators = jsonResponse["generators"]?.jsonArray
@@ -87,10 +89,10 @@ class FieldsToolTest {
     @Test
     fun `should return consistent results across multiple calls`() =
         runTest {
-            val request = CallToolRequest(name = "fields", arguments = EmptyJsonObject)
+            val request = CallToolRequest(CallToolRequestParams(name = "fields", arguments = EmptyJsonObject))
 
-            val result1 = FieldsTool.handler(request)
-            val result2 = FieldsTool.handler(request)
+            val result1 = FieldsTool.handler(mockk(relaxed = true), request)
+            val result2 = FieldsTool.handler(mockk(relaxed = true), request)
 
             val response1 = result1.textContent()
             val response2 = result2.textContent()
@@ -102,8 +104,8 @@ class FieldsToolTest {
     @Test
     fun `should include common field generators`() =
         runTest {
-            val request = CallToolRequest(name = "fields", arguments = EmptyJsonObject)
-            val result = FieldsTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "fields", arguments = EmptyJsonObject))
+            val result = FieldsTool.handler(mockk(relaxed = true), request)
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
             val generators = jsonResponse["generators"]?.jsonArray

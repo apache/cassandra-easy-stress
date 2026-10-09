@@ -17,11 +17,13 @@
  */
 package org.apache.cassandra.easystress.server.tools
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
 import io.modelcontextprotocol.kotlin.sdk.server.RegisteredTool
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
@@ -85,7 +87,7 @@ val WorkloadInfoTool =
                 title = null,
                 description = "Get details of a specific workload",
                 inputSchema =
-                    Tool.Input(
+                    ToolSchema(
                         properties =
                             buildJsonObject {
                                 putJsonObject("workload") {
@@ -98,12 +100,13 @@ val WorkloadInfoTool =
                 outputSchema = null,
                 annotations = null,
             ),
-        handler = ::handleWorkloadInfo,
+        handler = { request -> handleWorkloadInfo(request) },
     )
 
 private suspend fun handleWorkloadInfo(request: CallToolRequest): CallToolResult =
     try {
-        val workloadName = Json.decodeFromJsonElement<WorkloadInfoRequest>(request.arguments).workload
+        val arguments = request.params.arguments ?: EmptyJsonObject
+        val workloadName = Json.decodeFromJsonElement<WorkloadInfoRequest>(arguments).workload
 
         logger.info { "Info request for $workloadName" }
 

@@ -17,10 +17,12 @@
  */
 package org.apache.cassandra.easystress.server.tools
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.mockk.mockk
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -35,10 +37,10 @@ class ListWorkloadsToolTest {
     @Test
     fun `should list available workloads`() =
         runTest {
-            val request = CallToolRequest(name = "list_workloads", arguments = EmptyJsonObject)
-            val result = ListWorkloadsTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "list_workloads", arguments = EmptyJsonObject))
+            val result = ListWorkloadsTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             assertThat(result.content).isNotEmpty()
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
@@ -63,8 +65,8 @@ class ListWorkloadsToolTest {
     @Test
     fun `should include known workloads`() =
         runTest {
-            val request = CallToolRequest(name = "list_workloads", arguments = EmptyJsonObject)
-            val result = ListWorkloadsTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "list_workloads", arguments = EmptyJsonObject))
+            val result = ListWorkloadsTool.handler(mockk(relaxed = true), request)
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
             val workloads = jsonResponse["workloads"]?.jsonArray
@@ -82,10 +84,10 @@ class ListWorkloadsToolTest {
     @Test
     fun `should return consistent results across multiple calls`() =
         runTest {
-            val request = CallToolRequest(name = "list_workloads", arguments = EmptyJsonObject)
+            val request = CallToolRequest(CallToolRequestParams(name = "list_workloads", arguments = EmptyJsonObject))
 
-            val result1 = ListWorkloadsTool.handler(request)
-            val result2 = ListWorkloadsTool.handler(request)
+            val result1 = ListWorkloadsTool.handler(mockk(relaxed = true), request)
+            val result2 = ListWorkloadsTool.handler(mockk(relaxed = true), request)
 
             val response1 = result1.textContent()
             val response2 = result2.textContent()

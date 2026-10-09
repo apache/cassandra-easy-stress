@@ -19,24 +19,19 @@ package org.apache.cassandra.easystress.commands
 
 import com.beust.jcommander.Parameter
 import com.beust.jcommander.Parameters
-import io.ktor.serialization.kotlinx.json.json
-import io.ktor.server.application.install
 import io.ktor.server.cio.CIO
 import io.ktor.server.cio.CIOApplicationEngine
 import io.ktor.server.engine.EmbeddedServer
 import io.ktor.server.engine.embeddedServer
-import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
-import io.ktor.server.sse.heartbeat
 import io.ktor.sse.ServerSentEvent
-import io.modelcontextprotocol.kotlin.sdk.Implementation
-import io.modelcontextprotocol.kotlin.sdk.ServerCapabilities
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
-import kotlinx.serialization.json.Json
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
+import io.modelcontextprotocol.kotlin.sdk.types.Implementation
+import io.modelcontextprotocol.kotlin.sdk.types.ServerCapabilities
 import org.apache.cassandra.easystress.server.StressTestManager
 import org.apache.cassandra.easystress.server.tools.FieldsTool
 import org.apache.cassandra.easystress.server.tools.ListWorkloadsTool
@@ -58,7 +53,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * The server provides:
  * - HTTP endpoint on configurable port (default: 9000)
- * - Server-Sent Events (SSE) for MCP communication
+ * - Streamable HTTP on `/mcp` for MCP communication
  * - JSON-based tool invocation and responses
  * - Thread-safe execution of concurrent tool calls
  *
@@ -72,7 +67,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Usage:
  * ```
- * cassandra-easy-stress mcp [-p 9000]
+ * cassandra-easy-stress server [-p 9000]
  * ```
  *
  * The server runs indefinitely until interrupted. Use Ctrl+C or call stop() to terminate.
@@ -140,18 +135,14 @@ class Server : IStressCommand {
         )
 
     /**
-     * Creates and configures the embedded Ktor server.
+     * Creates an MCP server instance with all available tools registered.
      *
-     * Configures:
-     * - CIO engine for async I/O
-     * - JSON content negotiation with lenient parsing
-     * - Basic HTTP route for health checks
-     * - MCP protocol support with SSE transport
-     * - Registration of all available tools
+     * The Streamable HTTP transport calls this factory, possibly more than once.  Every
+     * instance shares [tools], so all clients see the same [StressTestManager].
      *
-     * @return Configured but not yet started embedded server instance
+     * @return MCP server advertising the tools capability
      */
-    private fun getServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> {
+    private fun createMcpServer(): Server {
         val server =
             Server(
                 serverInfo =
@@ -174,19 +165,32 @@ class Server : IStressCommand {
             )
 
         // Register all tools with the server
-        server.addTools(
-            tools,
-        )
+        server.addTools(tools)
+        return server
+    }
 
-        return embeddedServer(CIO, port = port) {
-            install(ContentNegotiation) {
-                json(
-                    Json {
-                        prettyPrint = true
-                        isLenient = true
-                        ignoreUnknownKeys = true
-                    },
-                )
+    /**
+     * Creates and configures the embedded Ktor server.
+     *
+     * Configures:
+     * - CIO engine for async I/O
+     * - MCP Streamable HTTP transport on `/mcp`, with an SSE heartbeat every second
+     * - Basic HTTP route on `/` for health checks
+     *
+     * @return Configured but not yet started embedded server instance
+     */
+    private fun getServer(): EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration> =
+        embeddedServer(CIO, port = port) {
+            // Streamable HTTP on /mcp
+            mcpStreamableHttp(
+                path = "/mcp",
+                sseHeartbeatConfig = {
+                    period = 1.seconds
+                    // Clients parse every data field as JSON-RPC, so the heartbeat must be a comment.
+                    event = ServerSentEvent(comments = "heartbeat")
+                },
+            ) {
+                createMcpServer()
             }
 
             routing {
@@ -194,16 +198,5 @@ class Server : IStressCommand {
                     call.respondText("MCP Server is running")
                 }
             }
-
-            // MCP server configuration with SSE
-            mcp {
-                heartbeat {
-                    period = 1.seconds
-                    event = ServerSentEvent("heartbeat")
-                }
-                // Register all tools
-                server
-            }
         }
-    }
 }

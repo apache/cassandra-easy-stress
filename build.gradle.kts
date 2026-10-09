@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import com.netflix.gradle.plugins.deb.Deb
 import com.netflix.gradle.plugins.rpm.Rpm
 import io.gitlab.arturbosch.detekt.Detekt
@@ -345,4 +346,7 @@ tasks.withType<Detekt>().configureEach {
 }
 tasks.withType<DetektCreateBaselineTask>().configureEach {
     jvmTarget = "21"
+}
+tasks.withType<ShadowJar>().configureEach {
+    isZip64 = true
 }

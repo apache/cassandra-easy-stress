@@ -17,13 +17,13 @@
  */
 package org.apache.cassandra.easystress.server
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.EmptyJsonObject
-import io.modelcontextprotocol.kotlin.sdk.TextContent
-import io.modelcontextprotocol.kotlin.sdk.Tool
-import io.modelcontextprotocol.kotlin.sdk.Tool.Input
 import io.modelcontextprotocol.kotlin.sdk.server.RegisteredTool
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.EmptyJsonObject
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
+import io.modelcontextprotocol.kotlin.sdk.types.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -268,7 +268,8 @@ class StressTestManager {
             handler = { request: CallToolRequest ->
                 withContext(Dispatchers.IO) {
                     try {
-                        val runCommand = Json.decodeFromJsonElement(Run.serializer(), request.arguments)
+                        val arguments = request.params.arguments ?: EmptyJsonObject
+                        val runCommand = Json.decodeFromJsonElement(Run.serializer(), arguments)
                         if (tryStart(runCommand)) {
                             val jobId = getCurrentJobId() ?: "unknown"
                             println("Job started: $jobId")
@@ -326,7 +327,7 @@ class StressTestManager {
                     name = "stop",
                     title = null,
                     description = "Stop a currently running stress test",
-                    inputSchema = Input(properties = EmptyJsonObject),
+                    inputSchema = ToolSchema(properties = EmptyJsonObject),
                     outputSchema = null,
                     annotations = null,
                 ),
@@ -378,7 +379,7 @@ class StressTestManager {
                     name = "status",
                     title = null,
                     description = "Get status of running stress tests.  Latency numbers are expressed in microseconds.",
-                    inputSchema = Input(properties = EmptyJsonObject),
+                    inputSchema = ToolSchema(properties = EmptyJsonObject),
                     outputSchema = null,
                     annotations = null,
                 ),

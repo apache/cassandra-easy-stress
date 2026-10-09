@@ -19,7 +19,7 @@ package org.apache.cassandra.easystress.server
 
 import com.beust.jcommander.DynamicParameter
 import com.beust.jcommander.Parameter
-import io.modelcontextprotocol.kotlin.sdk.Tool
+import io.modelcontextprotocol.kotlin.sdk.types.ToolSchema
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -30,10 +30,10 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaField
 
 /**
- * Generates MCP Tool.Input schemas from IStressCommand classes.
+ * Generates MCP ToolSchema from IStressCommand classes.
  *
  * Directly reads @Parameter and @DynamicParameter annotations using Kotlin reflection
- * and converts them to MCP Tool.Input format. No intermediate data structures.
+ * and converts them to MCP ToolSchema format. No intermediate data structures.
  *
  * Usage:
  * ```kotlin
@@ -44,7 +44,7 @@ import kotlin.reflect.jvm.javaField
 class ToolInputSchemaGenerator(
     private val commandClass: KClass<out IStressCommand>,
 ) {
-    fun generateToolInput(): Tool.Input {
+    fun generateToolInput(): ToolSchema {
         val commandInstance = createInstance()
         val requiredFields = mutableListOf<String>()
 
@@ -102,7 +102,7 @@ class ToolInputSchemaGenerator(
                 }
             }
 
-        return Tool.Input(
+        return ToolSchema(
             properties = properties,
             required = requiredFields,
         )

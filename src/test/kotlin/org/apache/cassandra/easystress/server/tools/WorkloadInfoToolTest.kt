@@ -17,9 +17,11 @@
  */
 package org.apache.cassandra.easystress.server.tools
 
-import io.modelcontextprotocol.kotlin.sdk.CallToolRequest
-import io.modelcontextprotocol.kotlin.sdk.CallToolResult
-import io.modelcontextprotocol.kotlin.sdk.TextContent
+import io.mockk.mockk
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequest
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolRequestParams
+import io.modelcontextprotocol.kotlin.sdk.types.CallToolResult
+import io.modelcontextprotocol.kotlin.sdk.types.TextContent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -32,7 +34,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
 class WorkloadInfoToolTest {
-    private fun CallToolResult.textContent(): String = (this.content.first() as TextContent).text!!
+    private fun CallToolResult.textContent(): String = (this.content.first() as TextContent).text
 
     @Test
     fun `should require workload parameter`() {
@@ -47,10 +49,10 @@ class WorkloadInfoToolTest {
                 buildJsonObject {
                     put("workload", JsonPrimitive("nonexistent_workload_xyz"))
                 }
-            val request = CallToolRequest(name = "info", arguments = arguments)
-            val result = WorkloadInfoTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "info", arguments = arguments))
+            val result = WorkloadInfoTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isTrue()
+            assertThat(result.isError ?: false).isTrue()
             assertThat(result.textContent()).contains("not found")
         }
 
@@ -65,10 +67,10 @@ class WorkloadInfoToolTest {
                 buildJsonObject {
                     put("workload", JsonPrimitive(firstWorkload))
                 }
-            val request = CallToolRequest(name = "info", arguments = arguments)
-            val result = WorkloadInfoTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "info", arguments = arguments))
+            val result = WorkloadInfoTool.handler(mockk(relaxed = true), request)
 
-            assertThat(result.isError).isFalse()
+            assertThat(result.isError ?: false).isFalse()
             assertThat(result.content).isNotEmpty()
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
@@ -102,8 +104,8 @@ class WorkloadInfoToolTest {
                 buildJsonObject {
                     put("workload", JsonPrimitive(firstWorkload))
                 }
-            val request = CallToolRequest(name = "info", arguments = arguments)
-            val result = WorkloadInfoTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "info", arguments = arguments))
+            val result = WorkloadInfoTool.handler(mockk(relaxed = true), request)
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
             val schema = jsonResponse["schema"]?.jsonArray
@@ -127,8 +129,8 @@ class WorkloadInfoToolTest {
                 buildJsonObject {
                     put("workload", JsonPrimitive(firstWorkload))
                 }
-            val request = CallToolRequest(name = "info", arguments = arguments)
-            val result = WorkloadInfoTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "info", arguments = arguments))
+            val result = WorkloadInfoTool.handler(mockk(relaxed = true), request)
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
 
@@ -147,8 +149,8 @@ class WorkloadInfoToolTest {
                 buildJsonObject {
                     put("workload", JsonPrimitive(firstWorkload))
                 }
-            val request = CallToolRequest(name = "info", arguments = arguments)
-            val result = WorkloadInfoTool.handler(request)
+            val request = CallToolRequest(CallToolRequestParams(name = "info", arguments = arguments))
+            val result = WorkloadInfoTool.handler(mockk(relaxed = true), request)
 
             val jsonResponse = Json.parseToJsonElement(result.textContent()).jsonObject
             val parameters = jsonResponse["parameters"]?.jsonArray
