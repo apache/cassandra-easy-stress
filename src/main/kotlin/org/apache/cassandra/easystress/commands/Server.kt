@@ -67,7 +67,7 @@ import kotlin.time.Duration.Companion.seconds
  *
  * Usage:
  * ```
- * cassandra-easy-stress mcp [-p 9000]
+ * cassandra-easy-stress server [-p 9000]
  * ```
  *
  * The server runs indefinitely until interrupted. Use Ctrl+C or call stop() to terminate.
