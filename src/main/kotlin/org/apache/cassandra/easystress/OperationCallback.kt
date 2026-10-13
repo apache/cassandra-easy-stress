@@ -22,6 +22,8 @@ import com.google.common.base.Throwables
 import org.apache.cassandra.easystress.workloads.IStressRunner
 import org.apache.cassandra.easystress.workloads.Operation
 import org.apache.logging.log4j.kotlin.logger
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
 import java.util.concurrent.TimeUnit
 import java.util.function.BiConsumer
 
@@ -47,19 +49,38 @@ class OperationCallback(
         t: Throwable?,
     ) {
         if (t != null) {
-            context.metrics.errors.mark()
-            context.collect(op, Either.Right(Throwables.getRootCause(t)), startNanos, System.nanoTime())
-            log.error { t }
+            onError(t)
             return
         }
 
-        // Handle pagination in driver v4
-        if (paginate && result != null) {
-            // Fetch next page - this could be made async but we'll keep it simple for now
-            while (result.hasMorePages()) {
-                result.fetchNextPage()
+        // Each page is a separate AsyncResultSet, so the operation completes after the last page arrives
+        if (paginate && result != null && result.hasMorePages()) {
+            fetchAllPages(result).whenComplete { _, pageError ->
+                if (pageError != null) {
+                    onError(pageError)
+                } else {
+                    onSuccess(result)
+                }
             }
+            return
         }
+        onSuccess(result)
+    }
+
+    private fun fetchAllPages(page: AsyncResultSet): CompletionStage<AsyncResultSet> =
+        if (page.hasMorePages()) {
+            page.fetchNextPage().thenCompose(::fetchAllPages)
+        } else {
+            CompletableFuture.completedFuture(page)
+        }
+
+    private fun onError(t: Throwable) {
+        context.metrics.errors.mark()
+        context.collect(op, Either.Right(Throwables.getRootCause(t)), startNanos, System.nanoTime())
+        log.error { t }
+    }
+
+    private fun onSuccess(result: AsyncResultSet?) {
         val endNanos = System.nanoTime()
         context.timer(op, populatePhase).update(endNanos - op.createdAtNanos, TimeUnit.NANOSECONDS)
         // TODO (visibility): include details about paging?
