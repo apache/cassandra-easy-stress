@@ -146,14 +146,13 @@ class WorkloadRunner(
 
         // pull requests off the queue instead of using generateKey
         // move the getNextOperation into the queue thing
-        var paginate = context.mainArguments.paginate
+        val paginate = context.mainArguments.paginate
         for (op in queue.getNextOperation()) {
             // In driver v4, async execution returns a CompletionStage
             val startNanos = System.nanoTime()
             val future =
                 when (op) {
                     is Operation.DDL -> {
-                        paginate = false
                         // Create a SimpleStatement for DDL operations
                         context.session.executeAsync(SimpleStatement.newInstance(op.statement!!))
                     }
@@ -163,20 +162,10 @@ class WorkloadRunner(
                     }
                 }
 
-            // Create callback to handle the result
-            val callback =
-                OperationCallback(
-                    context,
-                    runner,
-                    op,
-                    startNanos,
-                    queue.populatePhase,
-                    paginate = paginate,
-                )
+            // with pagination the operation completes after the last page arrives
+            val completed = if (paginate) future.thenCompose { it.fetchAllPages() } else future
 
-            future.whenComplete { result, error ->
-                callback.accept(result, error)
-            }
+            completed.whenComplete(OperationCallback(context, runner, op, startNanos, queue.populatePhase))
         }
     }
 
@@ -220,12 +209,9 @@ class WorkloadRunner(
                         op,
                         startNanos,
                         queue.populatePhase,
-                        paginate = false,
                     )
 
-                future.whenComplete { result, error ->
-                    callback.accept(result, error)
-                }
+                future.whenComplete(callback)
             }
         } catch (_: OperationStopException) {
             log.info("Received Stop signal")

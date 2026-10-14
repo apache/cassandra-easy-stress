@@ -36,7 +36,6 @@ class OperationCallback(
     val op: Operation,
     val startNanos: Long,
     val populatePhase: Boolean,
-    val paginate: Boolean = false,
 ) : BiConsumer<AsyncResultSet?, Throwable?> {
     companion object {
         val log = logger()
@@ -53,13 +52,6 @@ class OperationCallback(
             return
         }
 
-        // Handle pagination in driver v4
-        if (paginate && result != null) {
-            // Fetch next page - this could be made async but we'll keep it simple for now
-            while (result.hasMorePages()) {
-                result.fetchNextPage()
-            }
-        }
         val endNanos = System.nanoTime()
         context.timer(op, populatePhase).update(endNanos - op.createdAtNanos, TimeUnit.NANOSECONDS)
         // TODO (visibility): include details about paging?
