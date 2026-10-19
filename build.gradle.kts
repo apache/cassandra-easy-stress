@@ -69,6 +69,7 @@ dependencies {
 
     // Java driver v4
     implementation(libs.cassandra.driver.core)
+    implementation(libs.lz4.java)
     implementation(libs.jackson.module.kotlin)
 
     implementation(libs.reflections)

@@ -135,6 +135,12 @@ class Run(
     @Parameter(names = ["--compression"], description = "Compression option to pass to CREATE TABLE. Example: {'class':'ZstdCompressor'}")
     var compression = ""
 
+    @Parameter(
+        names = ["--protocol-compression"],
+        description = "Protocol compression algorithm ('lz4' or 'none'). Default is 'lz4'.",
+    )
+    var protocolCompression: String = "lz4"
+
     /**
      * Keyspace to use for stress testing.
      *
@@ -351,6 +357,7 @@ class Run(
         var configLoaderBuilder =
             DriverConfigLoader
                 .programmaticBuilder()
+                .withString(DefaultDriverOption.PROTOCOL_COMPRESSION, protocolCompression.trim().lowercase())
                 // Default consistency levels
                 .withString(DefaultDriverOption.REQUEST_CONSISTENCY, consistencyLevel.toString())
                 .withString(DefaultDriverOption.REQUEST_SERIAL_CONSISTENCY, serialConsistencyLevel.toString())
@@ -420,6 +427,11 @@ class Run(
         Preconditions.checkArgument(
             partitionKeyGenerator in setOf("random", "normal", "sequence"),
             "Partition generator Supports random, normal, and sequence.",
+        )
+
+        Preconditions.checkArgument(
+            protocolCompression.trim().lowercase() in setOf("lz4", "none"),
+            "Protocol compression must be either 'lz4' or 'none'.",
         )
 
         val workload = Workload.getWorkloads().get(this@Run.workload) ?: error("${this@Run.workload} profile does not exist")
