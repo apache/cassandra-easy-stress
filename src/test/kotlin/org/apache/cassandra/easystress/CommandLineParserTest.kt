@@ -58,9 +58,13 @@ internal class CommandLineParserTest {
     @ParameterizedTest
     @CsvSource(
         "--protocol-compression, lz4, lz4",
-        "--protocol-compression, none, none"
+        "--protocol-compression, none, none",
     )
-    fun testProtocolCompressionParsing(flag: String, value: String, expected: String) {
+    fun testProtocolCompressionParsing(
+        flag: String,
+        value: String,
+        expected: String,
+    ) {
         val args = arrayOf("run", "BasicTimeSeries", flag, value)
         val result = CommandLineParser.parse(args)
         val runCommand = result.getCommandInstance() as Run
