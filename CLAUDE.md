@@ -13,6 +13,16 @@ For comprehensive testing documentation, see the [Testing section in README.md](
 - Format code: `./gradlew ktlintFormat`
 - Check formatting: `./gradlew ktlintCheck`
 - Generate docs: `./gradlew docs`
+- Fast pre-PR checks: `./gradlew preflight` (ktlintCheck, detekt, test, distTar)
+
+## Before declaring work done (required)
+
+Run `./gradlew ktlintFormat` then `./gradlew preflight` and fix any failures. This covers
+the cheap CI jobs: ktlint, detekt, unit tests, and `distTar`. The slower per-version matrix
+(test40/test41/test50 on JDK 21 and 25) is left to CI; no need to run it locally.
+
+When adding a dependency, confirm it is the maintained artifact and that it lands in the
+distribution (`distTar`).
 
 ## Code Style Guidelines
 - Kotlin version: 1.9.0
