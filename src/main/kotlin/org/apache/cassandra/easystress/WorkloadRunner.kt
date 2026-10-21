@@ -138,8 +138,6 @@ class WorkloadRunner(
         // we use MAX_VALUE since it's essentially infinite if we give a duration
         val totalValues = if (duration > 0) Long.MAX_VALUE else iterations
 
-        // if we have a custom generator for the populate phase we'll use that
-
         val queue = RequestQueue(partitionKeyGenerator, context, totalValues, duration, runner, readRate, deleteRate)
 
         queue.start()
@@ -165,61 +163,32 @@ class WorkloadRunner(
             // with pagination the operation completes after the last page arrives
             val completed = if (paginate) future.thenCompose { it.fetchAllPages() } else future
 
-            completed.whenComplete(OperationCallback(context, runner, op, startNanos, queue.populatePhase))
+            completed.whenComplete(OperationCallback(context, runner, op, startNanos))
         }
     }
 
     /**
-     * Prepopulates the database with numRows
-     * Mutations only, does not count towards the normal metrics
-     * Records all timers in the populateMutations metrics
-     * Can (and should) be graphed separately
+     * Prepopulates the database for this thread.
+     * Does not count towards the normal metrics: latency goes to the populateMutations timer
+     * and rows to populateRows, so it can (and should) be graphed separately.
+     *
+     * @param generator name of the partition key generator, see [getGenerator]
      */
     fun populate(
-        numRows: Long,
-        deletes: Boolean = true,
+        settings: PopulateSettings,
+        generator: String,
     ) {
         val runner = profile.getRunner(context)
+        val keys = getGenerator(context, generator).generateKey(Long.MAX_VALUE, context.mainArguments.partitionCount)
 
-        val populatePartitionKeyGenerator = profile.getPopulatePartitionKeyGenerator().orElse(partitionKeyGenerator)
-
-        val queue =
-            RequestQueue(
-                populatePartitionKeyGenerator,
-                context,
-                numRows,
-                0,
-                runner,
-                0.0,
-                if (deletes) deleteRate else 0.0,
-                populatePhase = true,
-            )
-        queue.start()
-
-        try {
-            for (op in queue.getNextOperation()) {
-                val startNanos = System.nanoTime()
-                val future = context.session.executeAsync(op.bound!!)
-
-                // Create callback to handle the result
-                val callback =
-                    OperationCallback(
-                        context,
-                        runner,
-                        op,
-                        startNanos,
-                        queue.populatePhase,
-                    )
-
-                future.whenComplete(callback)
-            }
-        } catch (_: OperationStopException) {
-            log.info("Received Stop signal")
-            Thread.sleep(3000)
-        } catch (e: Exception) {
-            log.warn("Received unknown exception ${e.message}")
-            throw e
-        }
+        PopulateLoop(
+            runner,
+            keys.iterator(),
+            settings,
+            context.metrics,
+            { context.session.executeAsync(it) },
+            { op, result, startNanos, endNanos -> context.collect(op, result, startNanos, endNanos) },
+        ).run()
     }
 
     fun prepare() {

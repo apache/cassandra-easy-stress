@@ -109,8 +109,22 @@ Usage: cassandra-easy-stress [options] [command] [command options]
           --password, -P
             Default: cassandra
           --populate
-            Pre-population the DB with N rows before starting load test.
+            Pre-populate the DB with N rows per thread before starting the 
+            load test.  Use 'all' (or -1) to write every partition once.
             Default: 0
+          --populate.batch
+            Rows written to a partition in one batch during the populate 
+            phase. 
+            Default: 1
+          --populate.concurrency
+            Populate writes allowed in flight at once, per thread.
+            Default: 100
+          --populate.deletes, --populate.deleteratio
+            Ratio of populate writes that are deletes, 0-1.  Defaults to 0.  
+            --deleterate only applies to the main phase.
+          --populate.generator
+            Partition key generator for the populate phase: random, normal, or 
+            sequence.  Defaults to the workload's choice, or sequence.
           --port
             Override the cql port. Defaults to 9042.
             Default: 9042
@@ -120,6 +134,10 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             default with CASSANDRA_EASY_STRESS_PROM_PORT, or set to 0 to 
             disable. 
             Default: 9500
+          --protocol-compression
+            Protocol compression algorithm ('lz4' or 'none'). Default is 
+            'lz4'. 
+            Default: lz4
           --queue
             Queue Depth.  2x the rate by default.
             Default: 10000
