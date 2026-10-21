@@ -351,3 +351,11 @@ tasks.withType<DetektCreateBaselineTask>().configureEach {
 tasks.withType<ShadowJar>().configureEach {
     isZip64 = true
 }
+
+// Fast local checks mirroring the cheap CI jobs (lint, detekt, unit tests, distTar).
+// The slower per-version matrix (test40/test41/test50) is left to CI.
+tasks.register("preflight") {
+    group = "verification"
+    description = "Run fast CI-equivalent checks before sending a PR"
+    dependsOn("ktlintCheck", "detekt", "test", "distTar")
+}

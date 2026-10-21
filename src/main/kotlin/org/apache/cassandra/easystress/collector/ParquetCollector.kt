@@ -4,10 +4,12 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet
 import com.google.common.base.Throwables
 import org.apache.cassandra.easystress.Either
 import org.apache.hadoop.fs.Path
+import org.apache.parquet.column.ParquetProperties
 import org.apache.parquet.example.data.Group
 import org.apache.parquet.example.data.simple.SimpleGroupFactory
 import org.apache.parquet.hadoop.ParquetWriter
 import org.apache.parquet.hadoop.example.ExampleParquetWriter
+import org.apache.parquet.hadoop.metadata.CompressionCodecName
 import org.apache.parquet.schema.MessageTypeParser
 import java.io.File
 import java.util.concurrent.TimeUnit
@@ -46,7 +48,16 @@ class ParquetCollector(
                         "}",
                 )
             groupFactory = SimpleGroupFactory(schema)
-            writer = ExampleParquetWriter.builder(path).withType(schema).build()
+            // Defaults are UNCOMPRESSED + PARQUET_1_0 (PLAIN int64), which for long runs produces multi-GB files.
+            // ZSTD + PARQUET_2_0 (DELTA_BINARY_PACKED for the time/duration columns) is ~3x smaller with the same
+            // schema and values.
+            writer =
+                ExampleParquetWriter
+                    .builder(path)
+                    .withType(schema)
+                    .withCompressionCodec(CompressionCodecName.ZSTD)
+                    .withWriterVersion(ParquetProperties.WriterVersion.PARQUET_2_0)
+                    .build()
         }
 
         override fun write(event: Event) {
