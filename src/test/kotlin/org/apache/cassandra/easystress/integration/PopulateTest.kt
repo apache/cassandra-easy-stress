@@ -17,6 +17,9 @@
  */
 package org.apache.cassandra.easystress.integration
 
+import com.datastax.oss.driver.api.core.config.DriverExecutionProfile
+import com.datastax.oss.driver.internal.core.retry.DefaultRetryPolicy
+import org.apache.cassandra.easystress.PopulateRetryPolicy
 import org.apache.cassandra.easystress.commands.Run
 import org.apache.cassandra.easystress.converters.PopulateRowsConverter
 import org.assertj.core.api.Assertions.assertThat
@@ -48,6 +51,27 @@ class PopulateTest : CassandraTestBase() {
     }
 
     private fun count(table: String): Long = connection.execute("SELECT count(*) FROM cassandra_easy_stress.$table").one()!!.getLong(0)
+
+    /**
+     * Populate only retries its writes if the session it actually runs on resolves the populate
+     * profile to PopulateRetryPolicy.  The main phase must keep the driver's default.
+     */
+    @Test
+    fun sessionUsesPopulateRetryPolicyOnlyForThePopulateProfile() {
+        val run =
+            Run("placeholder").apply {
+                host = ip
+                cqlPort = port
+                dc = localDc
+            }
+
+        run.session.use { session ->
+            val policies = session.context.retryPolicies
+
+            assertThat(policies[PopulateRetryPolicy.POPULATE_PROFILE]).isInstanceOf(PopulateRetryPolicy::class.java)
+            assertThat(policies[DriverExecutionProfile.DEFAULT_NAME]).isInstanceOf(DefaultRetryPolicy::class.java)
+        }
+    }
 
     @Test
     fun populateAllWritesEveryPartitionOfEveryThread() {
