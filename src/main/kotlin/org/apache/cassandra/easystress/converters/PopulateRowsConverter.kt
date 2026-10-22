@@ -20,7 +20,7 @@ package org.apache.cassandra.easystress.converters
 import com.beust.jcommander.IStringConverter
 
 /**
- * Accepts a human readable row count, or "all" to populate every partition once.
+ * Accepts a human readable row count, or "all" (or -1, as MCP passes it) to populate every partition once.
  *
  * "all" can't be resolved here because it depends on --partitions and --populate.batch,
  * so it becomes [ALL] and Run resolves it.
@@ -30,8 +30,9 @@ class PopulateRowsConverter : IStringConverter<Long> {
         const val ALL = -1L
     }
 
+    // HumanReadableConverter drops the sign, so -1 is matched before it gets there.
     override fun convert(value: String?): Long =
-        if (value.equals("all", ignoreCase = true)) {
+        if (value.equals("all", ignoreCase = true) || value?.trim() == ALL.toString()) {
             ALL
         } else {
             HumanReadableConverter().convert(value)
