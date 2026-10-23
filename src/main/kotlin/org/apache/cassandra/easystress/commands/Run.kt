@@ -63,6 +63,7 @@ import org.apache.cassandra.easystress.generators.Registry
 import org.apache.logging.log4j.kotlin.logger
 import java.io.File
 import java.util.Timer
+import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.concurrent.fixedRateTimer
 import kotlin.concurrent.schedule
 import kotlin.concurrent.thread
@@ -659,6 +660,9 @@ class Run(
                 "delete ratio: ${settings.deleteRatio}, concurrency per thread: ${settings.concurrency}",
         )
 
+        // join() can't see an exception in the thread, so each thread records its own
+        val failures = ConcurrentLinkedQueue<Pair<Int, Throwable>>()
+
         ProgressBar("Populate Progress", settings.rows * threads, ProgressBarStyle.ASCII).use { bar ->
             // update the bar every second, starting 1 second from now, as a daemon thread
             val timer =
@@ -668,13 +672,25 @@ class Run(
 
             // each runner returns once all of its writes have completed
             runners
-                .map { thread(start = true, isDaemon = false, name = "populate-${it.context.thread}") { it.populate(settings, generator) } }
-                .forEach { it.join() }
+                .map { runner ->
+                    thread(start = true, isDaemon = false, name = "populate-${runner.context.thread}") {
+                        try {
+                            runner.populate(settings, generator)
+                        } catch (t: Throwable) {
+                            failures.add(runner.context.thread to t)
+                        }
+                    }
+                }.forEach { it.join() }
 
             timer.cancel()
             bar.stepTo(metrics.populateRows.count + metrics.populateErrors.count)
         }
         println("\nPre-populate complete: ${metrics.populateRows.count} rows written, ${metrics.populateErrors.count} rows failed.")
+
+        // A thread that stopped early did not write its rows, so the main phase must not start.
+        failures.firstOrNull()?.let { (thread, cause) ->
+            throw IllegalStateException("Populate failed on ${failures.size} of $threads threads; thread $thread: $cause", cause)
+        }
     }
 
     /**
@@ -693,10 +709,7 @@ class Run(
                 }
             }
 
-        val workloadDeleteRatio = if (option is PopulateOption.Custom && !option.deletes) 0.0 else null
-        val deleteRatio = populateDeleteRatio ?: workloadDeleteRatio ?: 0.0
-
-        return PopulateSettings(rows, populateBatch, deleteRatio, populateConcurrency)
+        return PopulateSettings(rows, populateBatch, populateDeleteRatio ?: 0.0, populateConcurrency)
     }
 
     private fun checkPopulateArguments() {

@@ -18,6 +18,7 @@
 package org.apache.cassandra.easystress
 
 import com.datastax.oss.driver.api.core.cql.SimpleStatement
+import org.apache.cassandra.easystress.workloads.IStressRunner
 import org.apache.cassandra.easystress.workloads.IStressWorkload
 import org.apache.cassandra.easystress.workloads.Operation
 import org.apache.logging.log4j.kotlin.logger
@@ -94,6 +95,13 @@ class WorkloadRunner(
         }
     }
 
+    /**
+     * One runner for both populate and the main phase.  Workloads such as LWT record what they
+     * wrote in the runner, so the main phase has to see the state populate left behind.  It is
+     * created on first use, because creating it can start work, such as CreateDrop's DDL timer.
+     */
+    private val runner: IStressRunner by lazy { profile.getRunner(context) }
+
     fun print(message: String) {
         println("[Thread ${context.thread}]: $message")
     }
@@ -132,9 +140,6 @@ class WorkloadRunner(
         iterations: Long,
         duration: Long,
     ) {
-        // create a semaphore local to the thread to limit the query concurrency
-        val runner = profile.getRunner(context)
-
         // we use MAX_VALUE since it's essentially infinite if we give a duration
         val totalValues = if (duration > 0) Long.MAX_VALUE else iterations
 
@@ -178,7 +183,6 @@ class WorkloadRunner(
         settings: PopulateSettings,
         generator: String,
     ) {
-        val runner = profile.getRunner(context)
         val keys = getGenerator(context, generator).generateKey(Long.MAX_VALUE, context.mainArguments.partitionCount)
 
         PopulateLoop(

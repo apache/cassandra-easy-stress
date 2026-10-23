@@ -20,9 +20,7 @@ package org.apache.cassandra.easystress
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet
 import com.datastax.oss.driver.api.core.cql.BatchStatement
 import com.datastax.oss.driver.api.core.cql.BatchType
-import com.datastax.oss.driver.api.core.cql.BoundStatement
 import com.datastax.oss.driver.api.core.cql.Statement
-import com.datastax.oss.driver.api.core.type.DataTypes
 import com.google.common.base.Throwables
 import org.apache.cassandra.easystress.PopulateRetryPolicy.Companion.POPULATE_PROFILE
 import org.apache.cassandra.easystress.workloads.IStressRunner
@@ -77,12 +75,12 @@ class PopulateLoop(
      */
     fun run() {
         val permits = Semaphore(settings.concurrency)
-        var queued = 0L
+        var rowsSent = 0L
 
-        while (queued < settings.rows) {
+        while (rowsSent < settings.rows) {
             permits.acquire()
-            val operations = nextOperations(keys.next(), settings.rows - queued)
-            queued += operations.size
+            val operations = nextOperations(keys.next(), settings.rows - rowsSent)
+            rowsSent += operations.size
 
             val startNanos = System.nanoTime()
             sendSafely(toStatement(operations)).whenComplete { result, error ->
@@ -116,25 +114,15 @@ class PopulateLoop(
         val bound = operations.map { requireNotNull(it.bound) { "Populate only supports bound statements, got $it" } }
 
         // Populate statements are idempotent so the driver hands their write timeouts to PopulateRetryPolicy.
+        // Cassandra accepts counter updates in an unlogged batch; only a logged batch rejects them.
         return if (bound.size == 1) {
             bound.first().setExecutionProfileName(POPULATE_PROFILE).setIdempotent(true)
         } else {
             BatchStatement
-                .newInstance(batchType(bound), bound)
+                .newInstance(BatchType.UNLOGGED, bound)
                 .setExecutionProfileName(POPULATE_PROFILE)
                 .setIdempotent(true)
         }
-    }
-
-    /**
-     * Cassandra only accepts counter updates in a counter batch.
-     */
-    private fun batchType(bound: List<BoundStatement>): BatchType {
-        val counter =
-            bound.any { statement ->
-                statement.preparedStatement.variableDefinitions.any { it.type == DataTypes.COUNTER }
-            }
-        return if (counter) BatchType.COUNTER else BatchType.UNLOGGED
     }
 
     /**

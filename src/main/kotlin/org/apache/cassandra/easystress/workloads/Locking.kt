@@ -67,7 +67,7 @@ class Locking : IStressWorkload {
         return listOf(query)
     }
 
-    override fun getPopulateOption(args: Run): PopulateOption = PopulateOption.Custom(args.partitionCount, deletes = false)
+    override fun getPopulateOption(args: Run): PopulateOption = PopulateOption.Custom(args.partitionCount)
 
     override fun getPopulatePartitionKeyGenerator(): Optional<String> = Optional.of("sequence")
 

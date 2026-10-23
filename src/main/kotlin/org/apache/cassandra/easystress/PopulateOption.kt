@@ -20,8 +20,11 @@ package org.apache.cassandra.easystress
 sealed class PopulateOption {
     class Standard : PopulateOption()
 
+    /**
+     * The workload sets the populate row count.  Deletes come only from --populate.deletes, which
+     * defaults to 0, so a workload needs no option to turn them off.
+     */
     class Custom(
         val rows: Long,
-        val deletes: Boolean = true,
     ) : PopulateOption()
 }

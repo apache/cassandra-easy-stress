@@ -22,12 +22,7 @@ import com.datastax.oss.driver.api.core.cql.AsyncResultSet
 import com.datastax.oss.driver.api.core.cql.BatchStatement
 import com.datastax.oss.driver.api.core.cql.BatchType
 import com.datastax.oss.driver.api.core.cql.BoundStatement
-import com.datastax.oss.driver.api.core.cql.ColumnDefinition
-import com.datastax.oss.driver.api.core.cql.ColumnDefinitions
-import com.datastax.oss.driver.api.core.cql.PreparedStatement
 import com.datastax.oss.driver.api.core.cql.Statement
-import com.datastax.oss.driver.api.core.type.DataType
-import com.datastax.oss.driver.api.core.type.DataTypes
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -54,24 +49,18 @@ class PopulateLoopTest {
     }
 
     /**
-     * A bound statement whose prepared statement has one variable of the given type.
      * The driver's setters return a new statement, so the mock returns itself.
      */
-    private fun bound(type: DataType = DataTypes.TEXT): BoundStatement {
-        val column = mockk<ColumnDefinition> { every { this@mockk.type } returns type }
-        val variables = mockk<ColumnDefinitions> { every { iterator() } answers { mutableListOf(column).iterator() } }
-        val prepared = mockk<PreparedStatement> { every { variableDefinitions } returns variables }
-        return mockk<BoundStatement> {
-            every { preparedStatement } returns prepared
+    private fun bound(): BoundStatement =
+        mockk<BoundStatement> {
             every { setExecutionProfileName(any()) } returns this
             every { setIdempotent(any()) } returns this
         }
-    }
 
-    private fun runner(type: DataType = DataTypes.TEXT): IStressRunner {
+    private fun runner(): IStressRunner {
         val runner = mockk<IStressRunner>(relaxed = true)
-        every { runner.getNextPopulate(any()) } answers { Operation.Mutation(bound(type)) }
-        every { runner.getNextDelete(any()) } answers { Operation.Deletion(bound(type)) }
+        every { runner.getNextPopulate(any()) } answers { Operation.Mutation(bound()) }
+        every { runner.getNextDelete(any()) } answers { Operation.Deletion(bound()) }
         return runner
     }
 
@@ -121,24 +110,12 @@ class PopulateLoopTest {
         }
     }
 
+    /**
+     * Counter updates go in the same unlogged batch; Cassandra only rejects them in a logged one.
+     * PopulateTest.counterBatchesApplyEveryIncrement checks that against a real server.
+     */
     @Test
-    fun usesACounterBatchForCounterUpdates() {
-        val sent = ConcurrentLinkedQueue<Statement<*>>()
-
-        loop(
-            PopulateSettings(rows = 2, batchSize = 2, deleteRatio = 0.0, concurrency = 1),
-            {
-                sent.add(it)
-                CompletableFuture.completedFuture(result)
-            },
-            runner(DataTypes.COUNTER),
-        ).run()
-
-        assertThat((sent.single() as BatchStatement).batchType).isEqualTo(BatchType.COUNTER)
-    }
-
-    @Test
-    fun usesAnUnloggedBatchForOtherWrites() {
+    fun usesAnUnloggedBatch() {
         val sent = ConcurrentLinkedQueue<Statement<*>>()
 
         loop(PopulateSettings(rows = 2, batchSize = 2, deleteRatio = 0.0, concurrency = 1), {

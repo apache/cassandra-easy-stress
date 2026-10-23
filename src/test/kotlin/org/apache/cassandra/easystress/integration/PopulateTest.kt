@@ -23,6 +23,7 @@ import org.apache.cassandra.easystress.PopulateRetryPolicy
 import org.apache.cassandra.easystress.commands.Run
 import org.apache.cassandra.easystress.converters.PopulateRowsConverter
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 /**
@@ -142,5 +143,42 @@ class PopulateTest : CassandraTestBase() {
 
         // with sequence keys and no populate deletes, all 300 rows are present, and the main phase deletes at most 2
         assertThat(count("keyvalue")).isGreaterThanOrEqualTo(298L)
+    }
+
+    /**
+     * RangeScan can't write, so every populate thread throws.  The run has to fail instead of
+     * starting the main phase on a data set populate never wrote.
+     */
+    @Test
+    fun aPopulateThreadThatThrowsFailsTheRun() {
+        assertThatThrownBy {
+            run("RangeScan") {
+                populate = 10
+                threads = 2
+            }
+        }.isInstanceOf(IllegalStateException::class.java)
+            .hasMessageContaining("Populate failed on 2 of 2 threads")
+    }
+
+    /**
+     * LWT records each value it writes in its runner.  Populate writes 0 to every key; if the main
+     * phase shares that runner it updates each key to 1, but with a runner of its own it sends
+     * INSERT ... IF NOT EXISTS, which changes nothing.
+     */
+    @Test
+    fun theMainPhaseSeesTheStatePopulateLeftInTheRunner() {
+        run("LWT") {
+            populate = PopulateRowsConverter.ALL
+            partitionCount = 50
+            partitionKeyGenerator = "sequence"
+            iterations = 50
+        }
+
+        val total =
+            connection
+                .execute("SELECT value FROM cassandra_easy_stress.lwt")
+                .all()
+                .sumOf { it.getInt("value") }
+        assertThat(total).isEqualTo(50)
     }
 }
