@@ -18,6 +18,7 @@
 package org.apache.cassandra.easystress.converters
 
 import com.beust.jcommander.IStringConverter
+import com.beust.jcommander.ParameterException
 
 /**
  * Accepts a human readable row count, or "all" (or -1, as MCP passes it) to populate every partition once.
@@ -28,13 +29,17 @@ import com.beust.jcommander.IStringConverter
 class PopulateRowsConverter : IStringConverter<Long> {
     companion object {
         const val ALL = -1L
+        private val ROW_COUNT = Regex("""\d+[kKmMbB]?""")
     }
 
-    // HumanReadableConverter drops the sign, so -1 is matched before it gets there.
-    override fun convert(value: String?): Long =
-        if (value.equals("all", ignoreCase = true) || value?.trim() == ALL.toString()) {
-            ALL
-        } else {
-            HumanReadableConverter().convert(value)
+    // HumanReadableConverter drops the sign and turns anything it can't read into 0, so a typo
+    // such as "al" would quietly populate nothing.  Only a count, "all" or -1 gets through.
+    override fun convert(value: String?): Long {
+        val text = value?.trim().orEmpty()
+        return when {
+            text.equals("all", ignoreCase = true) || text == ALL.toString() -> ALL
+            ROW_COUNT.matches(text) -> HumanReadableConverter().convert(text)
+            else -> throw ParameterException("--populate must be a row count such as 10000 or 10k, or 'all'; got '$value'")
         }
+    }
 }

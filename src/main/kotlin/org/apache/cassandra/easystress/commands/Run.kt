@@ -191,7 +191,9 @@ class Run(
         names = ["--populate"],
         description =
             "Pre-populate the DB with N rows per thread before starting the load test.  " +
-                "Use 'all' (or -1) to write every partition once.",
+                "Use 'all' (or -1) for --partitions x --populate.batch rows, which visits every partition once " +
+                "with the sequence generator and no deletes.  Deletes, and the random and normal generators, " +
+                "visit some partitions more than once and others not at all.",
         converter = PopulateRowsConverter::class,
     )
     var populate = 0L
@@ -218,7 +220,9 @@ class Run(
 
     @Parameter(
         names = ["--populate.deletes", "--populate.deleteratio"],
-        description = "Ratio of populate writes that are deletes, 0-1.  Defaults to 0.  --deleterate only applies to the main phase.",
+        description =
+            "Ratio of populate writes that are deletes, 0-1.  Defaults to 0.  Each delete counts as one row " +
+                "and uses up a visit to a partition.  --deleterate only applies to the main phase.",
     )
     var populateDeleteRatio: Double? = null
 
@@ -461,8 +465,8 @@ class Run(
         iterations = if (duration == 0L && iterations == 0L) DEFAULT_ITERATIONS else iterations
 
         Preconditions.checkArgument(
-            partitionKeyGenerator in setOf("random", "normal", "sequence"),
-            "Partition generator Supports random, normal, and sequence.",
+            partitionKeyGenerator in WorkloadRunner.GENERATORS,
+            "Partition generator supports ${WorkloadRunner.GENERATORS.keys.joinToString()}.",
         )
 
         Preconditions.checkArgument(
@@ -696,6 +700,9 @@ class Run(
     /**
      * Works out the populate settings.  A workload's populate option overrides --populate, and the
      * --populate.* flags win over the workload's choice where both exist.
+     *
+     * PopulateLoop writes --populate.batch rows on each visit to a key, so a count of keys to visit
+     * (--populate all, or a workload's custom count) becomes keys * batch rows.
      */
     private fun resolvePopulateSettings(workload: Workload): PopulateSettings {
         val option = workload.instance.getPopulateOption(this)
@@ -704,8 +711,8 @@ class Run(
             when (option) {
                 is PopulateOption.Standard -> if (populate == PopulateRowsConverter.ALL) partitionCount * populateBatch else populate
                 is PopulateOption.Custom -> {
-                    println("Using workload specific populate options of ${option.rows}")
-                    option.rows
+                    println("Using workload specific populate options of ${option.partitions} partitions")
+                    option.partitions * populateBatch
                 }
             }
 
@@ -720,8 +727,8 @@ class Run(
         Preconditions.checkArgument(populateConcurrency > 0, "--populate.concurrency must be at least 1.")
         Preconditions.checkArgument(populateBatch > 0, "--populate.batch must be at least 1.")
         Preconditions.checkArgument(
-            populateGenerator == null || populateGenerator in setOf("random", "normal", "sequence"),
-            "--populate.generator supports random, normal, and sequence.",
+            populateGenerator == null || populateGenerator in WorkloadRunner.GENERATORS,
+            "--populate.generator supports ${WorkloadRunner.GENERATORS.keys.joinToString()}.",
         )
         Preconditions.checkArgument(
             populateDeleteRatio == null || populateDeleteRatio!! in 0.0..1.0,

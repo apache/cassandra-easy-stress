@@ -31,9 +31,15 @@ import org.apache.logging.log4j.kotlin.logger
  *
  * The populate phase exists to load a known data set, so a write that fails is a row that is missing
  * from the test.  The driver's default policy retries almost nothing for a write.  This one retries
- * every failure, on the next node, until [MAX_RETRIES] is reached.  The driver only asks the policy
- * about a write timeout or an aborted request when the statement is idempotent, so populate marks
- * every statement idempotent.
+ * every failure until [MAX_RETRIES] is reached.  The driver only asks the policy about a write
+ * timeout or an aborted request when the statement is idempotent, so populate marks every
+ * statement idempotent.
+ *
+ * Retrying on the next node takes that node from the request's query plan, and the request fails
+ * once the plan is empty, which on a three node cluster is after two retries.  So a failure the
+ * coordinator answered (a timeout, unavailable, or an error response) is retried on the same
+ * coordinator, which keeps the plan for the case that needs another node: an aborted request, where
+ * the connection to the coordinator itself failed.
  *
  * The driver gives no way to wait between attempts.  The populate in-flight limit bounds how much
  * extra load the retries can add.
@@ -52,10 +58,11 @@ class PopulateRetryPolicy(
     private fun decide(
         reason: String,
         retryCount: Int,
+        retry: RetryDecision = RetryDecision.RETRY_SAME,
     ): RetryDecision =
         if (retryCount < MAX_RETRIES) {
             log.debug { "Retrying populate write after $reason, attempt ${retryCount + 1} of $MAX_RETRIES" }
-            RetryDecision.RETRY_NEXT
+            retry
         } else {
             RetryDecision.RETHROW
         }
@@ -90,7 +97,7 @@ class PopulateRetryPolicy(
         request: Request,
         error: Throwable,
         retryCount: Int,
-    ): RetryDecision = decide("aborted request", retryCount)
+    ): RetryDecision = decide("aborted request", retryCount, RetryDecision.RETRY_NEXT)
 
     override fun onErrorResponse(
         request: Request,

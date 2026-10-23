@@ -146,6 +146,20 @@ class PopulateTest : CassandraTestBase() {
     }
 
     /**
+     * Locking's populate option counts partitions.  Each visit writes a batch, so a batch must not
+     * shrink the number of partitions populated.
+     */
+    @Test
+    fun aWorkloadPartitionCountStillCoversEveryPartitionWithABatch() {
+        run("Locking") {
+            partitionCount = 200
+            populateBatch = 5
+        }
+
+        assertThat(count("lwtupdates")).isEqualTo(200)
+    }
+
+    /**
      * RangeScan can't write, so every populate thread throws.  The run has to fail instead of
      * starting the main phase on a data set populate never wrote.
      */

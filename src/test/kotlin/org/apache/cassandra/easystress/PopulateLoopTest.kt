@@ -36,6 +36,7 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 
 class PopulateLoopTest {
@@ -218,5 +219,41 @@ class PopulateLoopTest {
 
         verify(exactly = 0) { runner.getNextDelete(any()) }
         verify(exactly = 50) { runner.getNextPopulate(any()) }
+    }
+
+    /**
+     * A workload that throws must not leave writes running after run() returns, because the
+     * caller fails the run and closes the session next.
+     */
+    @Test
+    fun aWorkloadThatThrowsWaitsForWritesInFlightThenThrows() {
+        val runner = runner()
+        val calls = AtomicInteger()
+        every { runner.getNextPopulate(any()) } answers {
+            if (calls.incrementAndGet() == 3) throw IllegalStateException("workload failed")
+            Operation.Mutation(bound())
+        }
+        val pending = ConcurrentLinkedQueue<CompletableFuture<AsyncResultSet>>()
+        val thrown = AtomicReference<Throwable>()
+        val worker =
+            thread {
+                try {
+                    loop(PopulateSettings(rows = 10, batchSize = 1, deleteRatio = 0.0, concurrency = 5), {
+                        CompletableFuture<AsyncResultSet>().also { pending.add(it) }
+                    }, runner).run()
+                } catch (e: Throwable) {
+                    thrown.set(e)
+                }
+            }
+
+        waitUntil { pending.size == 2 && calls.get() == 3 }
+        Thread.sleep(100)
+        assertThat(worker.isAlive).isTrue()
+
+        pending.forEach { it.complete(result) }
+        worker.join(TimeUnit.SECONDS.toMillis(10))
+        assertThat(worker.isAlive).isFalse()
+        assertThat(thrown.get()).hasMessage("workload failed")
+        assertThat(metrics.populateRows.count).isEqualTo(2)
     }
 }

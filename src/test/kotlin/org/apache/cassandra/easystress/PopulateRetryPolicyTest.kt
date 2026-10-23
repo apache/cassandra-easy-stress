@@ -36,30 +36,36 @@ class PopulateRetryPolicyTest {
         private val request = mockk<Request>()
         private val cl = ConsistencyLevel.LOCAL_QUORUM
 
+        private val same = RetryDecision.RETRY_SAME
+        private val next = RetryDecision.RETRY_NEXT
+
         /**
-         * Every failure the driver can hand a retry policy, as a function of the retry count.
+         * Every failure the driver can hand a retry policy, as a function of the retry count, with
+         * the retry it should get.  Only an aborted request moves on: retrying on the next node uses
+         * up the query plan, so a failure the coordinator answered stays on that coordinator.
          */
         @JvmStatic
         fun failures(): List<Arguments> =
-            listOf<Pair<String, (Int) -> RetryDecision>>(
-                "read timeout" to { n -> policy.onReadTimeout(request, cl, 2, 1, false, n) },
-                "write timeout" to { n -> policy.onWriteTimeout(request, cl, WriteType.SIMPLE, 2, 1, n) },
-                "batch write timeout" to { n -> policy.onWriteTimeout(request, cl, WriteType.UNLOGGED_BATCH, 2, 1, n) },
-                "counter write timeout" to { n -> policy.onWriteTimeout(request, cl, WriteType.COUNTER, 2, 1, n) },
-                "unavailable" to { n -> policy.onUnavailable(request, cl, 2, 1, n) },
-                "aborted request" to { n -> policy.onRequestAborted(request, IllegalStateException("closed"), n) },
-                "overloaded" to { n -> policy.onErrorResponse(request, mockk<OverloadedException>(), n) },
-            ).map { (name, decide) -> Arguments.of(name, decide) }
+            listOf<Triple<String, RetryDecision, (Int) -> RetryDecision>>(
+                Triple("read timeout", same) { n -> policy.onReadTimeout(request, cl, 2, 1, false, n) },
+                Triple("write timeout", same) { n -> policy.onWriteTimeout(request, cl, WriteType.SIMPLE, 2, 1, n) },
+                Triple("batch write timeout", same) { n -> policy.onWriteTimeout(request, cl, WriteType.UNLOGGED_BATCH, 2, 1, n) },
+                Triple("counter write timeout", same) { n -> policy.onWriteTimeout(request, cl, WriteType.COUNTER, 2, 1, n) },
+                Triple("unavailable", same) { n -> policy.onUnavailable(request, cl, 2, 1, n) },
+                Triple("overloaded", same) { n -> policy.onErrorResponse(request, mockk<OverloadedException>(), n) },
+                Triple("aborted request", next) { n -> policy.onRequestAborted(request, IllegalStateException("closed"), n) },
+            ).map { (name, retry, decide) -> Arguments.of(name, retry, decide) }
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("failures")
-    fun retriesOnTheNextNodeUntilTheCap(
+    fun retriesUntilTheCap(
         name: String,
+        retry: RetryDecision,
         decide: (Int) -> RetryDecision,
     ) {
         for (retryCount in 0 until MAX_RETRIES) {
-            assertThat(decide(retryCount)).`as`("$name, retry $retryCount").isEqualTo(RetryDecision.RETRY_NEXT)
+            assertThat(decide(retryCount)).`as`("$name, retry $retryCount").isEqualTo(retry)
         }
         assertThat(decide(MAX_RETRIES)).`as`(name).isEqualTo(RetryDecision.RETHROW)
     }

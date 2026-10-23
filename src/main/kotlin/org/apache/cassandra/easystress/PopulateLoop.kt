@@ -77,24 +77,35 @@ class PopulateLoop(
         val permits = Semaphore(settings.concurrency)
         var rowsSent = 0L
 
-        while (rowsSent < settings.rows) {
-            permits.acquire()
-            val operations = nextOperations(keys.next(), settings.rows - rowsSent)
-            rowsSent += operations.size
+        try {
+            while (rowsSent < settings.rows) {
+                permits.acquire()
+                val (operations, statement) =
+                    try {
+                        val operations = nextOperations(keys.next(), settings.rows - rowsSent)
+                        operations to toStatement(operations)
+                    } catch (e: Throwable) {
+                        // nothing was sent, so nothing else will give this permit back
+                        permits.release()
+                        throw e
+                    }
+                rowsSent += operations.size
 
-            val startNanos = System.nanoTime()
-            sendSafely(toStatement(operations)).whenComplete { result, error ->
-                try {
-                    onComplete(operations, result, error, startNanos)
-                } finally {
-                    permits.release()
+                val startNanos = System.nanoTime()
+                sendSafely(statement).whenComplete { result, error ->
+                    try {
+                        onComplete(operations, result, error, startNanos)
+                    } finally {
+                        permits.release()
+                    }
                 }
             }
+        } finally {
+            // Every write holds its permit until it completes, so holding all of them means none
+            // are in flight.  This also runs when the workload throws, so no write outlives run().
+            permits.acquire(settings.concurrency)
+            permits.release(settings.concurrency)
         }
-
-        // Every write holds its permit until it completes, so holding all of them means none are in flight.
-        permits.acquire(settings.concurrency)
-        permits.release(settings.concurrency)
     }
 
     private fun nextOperations(

@@ -50,20 +50,24 @@ class WorkloadRunner(
             return WorkloadRunner(context, profile, partitionKeyGenerator)
         }
 
+        /**
+         * Partition key generators by the name --partitiongenerator and --populate.generator accept.
+         */
+        val GENERATORS: Map<String, (String) -> PartitionKeyGenerator> =
+            mapOf(
+                "normal" to { prefix -> PartitionKeyGenerator.normal(prefix) },
+                "random" to { prefix -> PartitionKeyGenerator.random(prefix) },
+                "sequence" to { prefix -> PartitionKeyGenerator.sequence(prefix) },
+            )
+
         fun getGenerator(
             context: StressContext,
             name: String,
         ): PartitionKeyGenerator {
             val prefix = context.mainArguments.id + "." + context.thread + "."
             println("Creating generator $name")
-            val partitionKeyGenerator =
-                when (name) {
-                    "normal" -> PartitionKeyGenerator.normal(prefix)
-                    "random" -> PartitionKeyGenerator.random(prefix)
-                    "sequence" -> PartitionKeyGenerator.sequence(prefix)
-                    else -> throw PartitionKeyGeneratorException()
-                }
-            return partitionKeyGenerator
+            val create = GENERATORS[name] ?: throw PartitionKeyGeneratorException()
+            return create(prefix)
         }
 
         val log = logger()

@@ -110,7 +110,11 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Default: cassandra
           --populate
             Pre-populate the DB with N rows per thread before starting the 
-            load test.  Use 'all' (or -1) to write every partition once.
+            load test.  Use 'all' (or -1) for --partitions x --populate.batch 
+            rows, which visits every partition once with the sequence 
+            generator and no deletes.  Deletes, and the random and normal 
+            generators, visit some partitions more than once and others not at 
+            all. 
             Default: 0
           --populate.batch
             Rows written to a partition in one batch during the populate 
@@ -121,6 +125,7 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Default: 100
           --populate.deletes, --populate.deleteratio
             Ratio of populate writes that are deletes, 0-1.  Defaults to 0.  
+            Each delete counts as one row and uses up a visit to a partition.  
             --deleterate only applies to the main phase.
           --populate.generator
             Partition key generator for the populate phase: random, normal, or 
