@@ -18,11 +18,15 @@ import org.apache.parquet.hadoop.ParquetFileReader
 import org.apache.parquet.hadoop.ParquetReader
 import org.apache.parquet.hadoop.example.GroupReadSupport
 import org.apache.parquet.hadoop.metadata.CompressionCodecName
+import org.apache.parquet.hadoop.metadata.ParquetMetadata
 import org.apache.parquet.hadoop.util.HadoopInputFile
+import org.apache.parquet.schema.MessageTypeParser
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Condition
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import java.io.File
 import java.nio.file.Path
 
@@ -63,58 +67,117 @@ internal class ParquetCollectorTest {
         )
     }
 
-    @Test
-    fun usesZstdAndV2Encodings() {
-        val file = tempDir!!.resolve("rawlog.parquet").toFile()
+    private fun writeEvents(
+        file: File,
+        byteStreamSplit: Boolean,
+    ): Operation {
         val op = Operation.SelectStatement(mockk<BoundStatement>())
-        val writer = ParquetCollector.ParquetTableWriter(file)
-        val rows = 100
-        for (i in 0 until rows) {
-            writer.write(
-                AsyncCollector.Event(
-                    op,
-                    Either.Left(mockk<AsyncResultSet>()),
-                    op.createdAtNanos + i,
-                    op.createdAtNanos + 1_000 + i * 2L,
-                ),
-            )
+        val writer = ParquetCollector.ParquetTableWriter(file, byteStreamSplit)
+        for (i in 0 until ROWS) {
+            val result: Either<AsyncResultSet, Throwable> =
+                if (i % 10 == 9) Either.Right(IllegalStateException("boom $i")) else Either.Left(mockk<AsyncResultSet>())
+            writer.write(AsyncCollector.Event(op, result, op.createdAtNanos + i, op.createdAtNanos + 1_000 + i * 2L))
         }
         writer.close()
+        return op
+    }
 
-        val path =
-            org.apache.hadoop.fs
-                .Path(file.toURI())
-        val conf = Configuration()
-        ParquetFileReader.open(HadoopInputFile.fromPath(path, conf)).use { reader ->
-            val columns = reader.footer.blocks.flatMap { it.columns }
-            Assertions.assertThat(columns).isNotEmpty
-            Assertions.assertThat(columns.map { it.codec }).containsOnly(CompressionCodecName.ZSTD)
-            val int64Encodings =
-                columns
-                    .filter { it.path.toDotString().endsWith("_ms") || it.path.toDotString().endsWith("_ns") }
-                    .flatMap { it.encodings }
-            Assertions.assertThat(int64Encodings).contains(Encoding.DELTA_BINARY_PACKED)
-        }
+    private fun hadoopPath(file: File) =
+        org.apache.hadoop.fs
+            .Path(file.toURI())
 
-        // semantics must not change: same columns, same values
+    private fun footer(file: File): ParquetMetadata =
+        ParquetFileReader.open(HadoopInputFile.fromPath(hadoopPath(file), Configuration())).use { it.footer }
+
+    private fun encodingsByColumn(footer: ParquetMetadata): Map<String, Set<Encoding>> =
+        footer.blocks
+            .flatMap { it.columns }
+            .groupBy { it.path.toDotString() }
+            .mapValues { (_, chunks) -> chunks.flatMap { it.encodings }.toSet() }
+
+    @ParameterizedTest
+    @ValueSource(booleans = [false, true])
+    fun roundTrip(byteStreamSplit: Boolean) {
+        val file = tempDir!!.resolve("rawlog.parquet").toFile()
+        val op = writeEvents(file, byteStreamSplit)
+
         val read = mutableListOf<Group>()
-        ParquetReader.builder(GroupReadSupport(), path).withConf(conf).build().use { reader ->
+        ParquetReader.builder(GroupReadSupport(), hadoopPath(file)).withConf(Configuration()).build().use { reader ->
             while (true) {
                 read.add(reader.read() ?: break)
             }
         }
-        Assertions.assertThat(read).hasSize(rows)
+        Assertions.assertThat(read).hasSize(ROWS)
         read.forEachIndexed { i, g ->
+            val failed = i % 10 == 9
             Assertions.assertThat(g.getString("operation", 0)).isEqualTo("Select")
-            Assertions.assertThat(g.getBoolean("success", 0)).isTrue
-            Assertions.assertThat(g.getString("failure_reason", 0)).isEmpty()
+            Assertions.assertThat(g.getBoolean("success", 0)).isEqualTo(!failed)
+            if (failed) {
+                Assertions.assertThat(g.getString("failure_reason", 0)).isEqualTo("IllegalStateException")
+                Assertions.assertThat(g.getString("failure_stacktrace", 0)).contains("IllegalStateException: boom $i")
+            } else {
+                Assertions.assertThat(g.getString("failure_reason", 0)).isEmpty()
+                Assertions.assertThat(g.getString("failure_stacktrace", 0)).isEmpty()
+            }
             Assertions.assertThat(g.getLong("request_start_time_ms", 0)).isEqualTo(op.createdAtMillis)
             Assertions.assertThat(g.getLong("request_duration_ns", 0)).isEqualTo(1_000 + i * 2L)
             Assertions.assertThat(g.getLong("service_duration_ns", 0)).isEqualTo(1_000 + i * 2L - i)
         }
     }
 
+    @Test
+    fun defaultEncodings() {
+        val file = tempDir!!.resolve("rawlog.parquet").toFile()
+        writeEvents(file, byteStreamSplit = false)
+
+        val footer = footer(file)
+        Assertions.assertThat(footer.blocks.flatMap { it.columns }.map { it.codec }).containsOnly(CompressionCodecName.ZSTD)
+        val encodings = encodingsByColumn(footer)
+        for (col in INT64_COLUMNS) {
+            Assertions.assertThat(encodings[col]).describedAs(col).contains(Encoding.DELTA_BINARY_PACKED)
+        }
+        Assertions.assertThat(encodings.values.flatten()).doesNotContain(Encoding.BYTE_STREAM_SPLIT)
+    }
+
+    @Test
+    fun byteStreamSplitEncodings() {
+        val file = tempDir!!.resolve("rawlog.parquet").toFile()
+        writeEvents(file, byteStreamSplit = true)
+
+        val encodings = encodingsByColumn(footer(file))
+        for (col in listOf("service_duration_ns", "request_duration_ns")) {
+            Assertions.assertThat(encodings[col]).describedAs(col).contains(Encoding.BYTE_STREAM_SPLIT)
+        }
+        for (col in listOf("service_start_time_ms", "request_start_time_ms")) {
+            Assertions.assertThat(encodings[col]).describedAs(col).contains(Encoding.DELTA_BINARY_PACKED)
+        }
+    }
+
+    /** The output must stay readable by consumers of the released schema. */
+    @Test
+    fun schemaMatchesReleasedSchema() {
+        val released =
+            MessageTypeParser.parseMessageType(
+                "message example {\n" +
+                    "  required binary operation (UTF8);\n" +
+                    "  required boolean success;\n" +
+                    "  required binary failure_reason (UTF8);\n" +
+                    "  required binary failure_stacktrace (UTF8);\n" +
+                    "  required int64 service_start_time_ms;\n" +
+                    "  required int64 service_duration_ns;\n" +
+                    "  required int64 request_start_time_ms;\n" +
+                    "  required int64 request_duration_ns;\n" +
+                    "}",
+            )
+        val file = tempDir!!.resolve("rawlog.parquet").toFile()
+        writeEvents(file, byteStreamSplit = false)
+        Assertions.assertThat(footer(file).fileMetaData.schema).isEqualTo(released)
+    }
+
     companion object {
+        private const val ROWS = 100
+        private val INT64_COLUMNS = listOf("service_start_time_ms", "service_duration_ns", "request_start_time_ms", "request_duration_ns")
+
         val ctx =
             Context(
                 mockk<CqlSession>(),

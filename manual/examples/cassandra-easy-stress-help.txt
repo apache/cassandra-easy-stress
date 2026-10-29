@@ -99,6 +99,12 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             specified path.  If the file is a directory, the file will be 
             named rawlog.parquet within that directory
             Default: <empty string>
+          --parquet-byte-stream-split
+            Use BYTE_STREAM_SPLIT encoding for the duration columns of the 
+            --parquet file, making it smaller.  The reader must support 
+            BYTE_STREAM_SPLIT on INT64 columns, e.g. DuckDB >= 2.0 or pyarrow 
+            >= 16; Spark's vectorized reader does not support it.
+            Default: false
           --partitiongenerator, --pg
             Method of generating partition keys.  Supports random, normal 
             (gaussian), and sequence.
@@ -120,6 +126,10 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             default with CASSANDRA_EASY_STRESS_PROM_PORT, or set to 0 to 
             disable. 
             Default: 9500
+          --protocol-compression
+            Protocol compression algorithm ('lz4' or 'none'). Default is 
+            'lz4'. 
+            Default: lz4
           --queue
             Queue Depth.  2x the rate by default.
             Default: 10000

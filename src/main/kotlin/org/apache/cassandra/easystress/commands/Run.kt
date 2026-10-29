@@ -293,6 +293,15 @@ class Run(
     )
     var parquetFile = ""
 
+    @Parameter(
+        names = ["--parquet-byte-stream-split"],
+        description =
+            "Use BYTE_STREAM_SPLIT encoding for the duration columns of the --parquet file, making it smaller.  " +
+                "The reader must support BYTE_STREAM_SPLIT on INT64 columns, e.g. DuckDB >= 2.0 or pyarrow >= 16; " +
+                "Spark's vectorized reader does not support it.",
+    )
+    var parquetByteStreamSplit = false
+
     @Parameter(names = ["--paging"], description = "Override the driver's default page size.")
     var paging: Int? = null
 
@@ -585,7 +594,7 @@ class Run(
             collectors.add(HdrCollector(hdrHistogramPrefix))
         }
         if (parquetFile != "") {
-            collectors.add(ParquetCollector(File(parquetFile)))
+            collectors.add(ParquetCollector(File(parquetFile), parquetByteStreamSplit))
         }
         if (collectors.size == 1) {
             return collectors[0]

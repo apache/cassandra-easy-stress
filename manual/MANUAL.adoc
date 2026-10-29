@@ -327,6 +327,9 @@ This writes operation metrics including operation type, success/failure status, 
 
 If a directory is provided instead of a file, cassandra-easy-stress will automatically create an appropriately named file in that directory.
 
+Add `--parquet-byte-stream-split` to use `BYTE_STREAM_SPLIT` encoding for the `*_duration_ns` columns, which makes the file smaller.
+It is off by default because the reader must support `BYTE_STREAM_SPLIT` on `INT64` columns (e.g. DuckDB 2.0+ or pyarrow 16+; Spark's vectorized reader does not).
+
 ==== Parquet Schema Reference
 
 Each row in the Parquet file represents a single operation with the following columns:

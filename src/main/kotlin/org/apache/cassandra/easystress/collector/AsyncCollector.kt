@@ -15,10 +15,13 @@ import java.util.concurrent.atomic.AtomicInteger
  * Base type for collectors that have "expensive" work that needs to happen off-thread.  Every call to collect will
  * generate an object, push to a queue, and processed in another worker thread.
  *
- * Implementations must define the writer interface which will be called to do the "real" work for the collector.
+ * Implementations must provide a writer factory; the writer will be called to do the "real" work for the collector.
+ * A factory (rather than an overridable method) is used since the writer is created during construction, before any
+ * subclass properties would be initialized.
  */
 abstract class AsyncCollector(
     fileOrDirectory: File,
+    createWriter: (File) -> Writer,
 ) : Collector {
     data class Event(
         val op: Operation,
@@ -47,8 +50,6 @@ abstract class AsyncCollector(
 
     val dropped = AtomicInteger()
     val counter = AtomicInteger()
-
-    abstract fun createWriter(fileOrDirectory: File): Writer
 
     override fun collect(
         ctx: StressContext,
