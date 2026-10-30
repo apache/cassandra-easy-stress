@@ -20,12 +20,18 @@ import java.util.concurrent.TimeUnit
  */
 class ParquetCollector(
     fileOrDirectory: File,
-) : AsyncCollector(fileOrDirectory) {
-    override fun createWriter(fileOrDirectory: File): Writer =
-        ParquetTableWriter(if (fileOrDirectory.isDirectory) File(fileOrDirectory, "rawlog.parquet") else fileOrDirectory)
-
+    byteStreamSplit: Boolean = false,
+) : AsyncCollector(
+        fileOrDirectory,
+        { ParquetTableWriter(if (it.isDirectory) File(it, "rawlog.parquet") else it, byteStreamSplit) },
+    ) {
+    /**
+     * @param byteStreamSplit use BYTE_STREAM_SPLIT for the `*_duration_ns` columns. Smaller files, but readers must
+     * support BYTE_STREAM_SPLIT on INT64 (e.g. DuckDB >= 2.0, pyarrow >= 16; not Spark's vectorized reader).
+     */
     class ParquetTableWriter(
         file: File,
+        byteStreamSplit: Boolean = false,
     ) : Writer {
         private val writer: ParquetWriter<Group>
         private val groupFactory: SimpleGroupFactory
@@ -51,13 +57,23 @@ class ParquetCollector(
             // Defaults are UNCOMPRESSED + PARQUET_1_0 (PLAIN int64), which for long runs produces multi-GB files.
             // ZSTD + PARQUET_2_0 (DELTA_BINARY_PACKED for the time/duration columns) is ~3x smaller with the same
             // schema and values.
-            writer =
+            val builder =
                 ExampleParquetWriter
                     .builder(path)
                     .withType(schema)
                     .withCompressionCodec(CompressionCodecName.ZSTD)
                     .withWriterVersion(ParquetProperties.WriterVersion.PARQUET_2_0)
-                    .build()
+                    .withDictionaryEncoding(true)
+                    // Large pages let the dictionary hold more distinct stack traces before falling back to plain.
+                    .withPageSize(PAGE_SIZE_BYTES)
+                    .withDictionaryPageSize(PAGE_SIZE_BYTES)
+            // start times are near-monotonic and durations near-unique, so skip the dictionary and go straight to
+            // DELTA_BINARY_PACKED (or BYTE_STREAM_SPLIT for durations, when enabled).
+            INT64_COLUMNS.forEach { builder.withDictionaryEncoding(it, false) }
+            if (byteStreamSplit) {
+                DURATION_COLUMNS.forEach { builder.withByteStreamSplitEncoding(it, true) }
+            }
+            writer = builder.build()
         }
 
         override fun write(event: Event) {
@@ -88,6 +104,10 @@ class ParquetCollector(
     }
 
     companion object {
+        private const val PAGE_SIZE_BYTES = 8 * 1024 * 1024
+        private val DURATION_COLUMNS = listOf("service_duration_ns", "request_duration_ns")
+        private val INT64_COLUMNS = listOf("service_start_time_ms", "request_start_time_ms") + DURATION_COLUMNS
+
         private fun op(event: Event) =
             event.op.javaClass.simpleName
                 .replace("Statement", "")

@@ -43,6 +43,13 @@ Configuration:
 
 
     logger:
+      # parquet/hadoop at debug log every value written, which can produce GBs of logs for large files
+      -
+        name: org.apache.parquet
+        level: warn
+      -
+        name: org.apache.hadoop
+        level: warn
       -
         name: org.apache.cassandra.easystress
         level: debug
