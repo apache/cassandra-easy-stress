@@ -213,6 +213,14 @@ class Run(
     @Parameter(names = ["--replication"], description = "Replication options")
     var replication = "{'class': 'SimpleStrategy', 'replication_factor':3 }"
 
+    @Parameter(
+        names = ["--mutation-tracking"],
+        description =
+            "Enable mutation tracking on the created keyspace (adds replication_type = 'tracked'). " +
+                "Requires a Cassandra version that supports mutation tracking.",
+    )
+    var mutationTracking = false
+
     @DynamicParameter(
         names = ["--field."],
         description = "Override a field's data generator.  Example usage: --field.tablename.fieldname='book(100,200)'",
@@ -748,16 +756,20 @@ class Run(
                 Thread.sleep(5000)
             }
 
-            val createKeyspace =
-                """CREATE KEYSPACE
-            | IF NOT EXISTS $keyspace
-            | WITH replication = $replication
-                """.trimMargin()
+            val createKeyspace = createKeyspaceCql()
 
             println("Creating $keyspace: \n$createKeyspace\n")
             session.execute(createKeyspace)
         }
         session.execute("USE $keyspace")
+    }
+
+    internal fun createKeyspaceCql(): String {
+        val trackedClause = if (mutationTracking) "\n AND replication_type = 'tracked'" else ""
+        return """CREATE KEYSPACE
+            | IF NOT EXISTS $keyspace
+            | WITH replication = $replication
+            """.trimMargin() + trackedClause
     }
 
     private fun executeAdditionalCQL() {

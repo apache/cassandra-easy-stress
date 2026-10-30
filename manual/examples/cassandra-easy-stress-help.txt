@@ -86,6 +86,11 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Max Read Latency
           --maxwlat
 
+          --mutation-tracking
+            Enable mutation tracking on the created keyspace (adds 
+            replication_type = 'tracked'). Requires a Cassandra version that 
+            supports mutation tracking.
+            Default: false
           --no-schema
             Skips schema creation
             Default: false

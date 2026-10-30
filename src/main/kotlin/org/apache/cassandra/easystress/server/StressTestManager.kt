@@ -425,6 +425,7 @@ class StressTestManager {
                                         put("compaction", it.compaction)
                                         put("compression", it.compression)
                                         put("replication", it.replication)
+                                        put("mutationTracking", it.mutationTracking)
                                         put("ttl", it.ttl)
                                         put("rowCache", it.rowCache)
                                         put("keyCache", it.keyCache)
