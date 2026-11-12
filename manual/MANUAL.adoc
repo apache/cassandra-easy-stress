@@ -272,6 +272,16 @@ a|
 It's possible to change the compression options used.  At the moment this changes the compression options of every table in the test.  This will be addressed in the future to be more flexible.
 
 
+==== Mutation Tracking
+
+The `--mutation-tracking` flag creates the keyspace with mutation tracking enabled by appending `replication_type = 'tracked'` to the `CREATE KEYSPACE` statement.  This works with any workload, but requires a Cassandra version that supports mutation tracking.  It has no effect on a keyspace that already exists, so combine it with `--drop` if needed.
+
+[source,bash]
+----
+cassandra-easy-stress run KeyValue --mutation-tracking --drop
+----
+
+
 ==== Customizing Fields
 
 To some extent, workloads can be customized by leveraging the `--fields`

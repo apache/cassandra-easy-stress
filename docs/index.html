@@ -724,6 +724,11 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             Max Read Latency
           --maxwlat
 
+          --mutation-tracking
+            Enable mutation tracking on the created keyspace (adds
+            replication_type = 'tracked'). Requires a Cassandra version that
+            supports mutation tracking.
+            Default: false
           --no-schema
             Skips schema creation
             Default: false
@@ -737,6 +742,12 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             specified path.  If the file is a directory, the file will be
             named rawlog.parquet within that directory
             Default: &lt;empty string&gt;
+          --parquet-byte-stream-split
+            Use BYTE_STREAM_SPLIT encoding for the duration columns of the
+            --parquet file, making it smaller.  The reader must support
+            BYTE_STREAM_SPLIT on INT64 columns, e.g. DuckDB &gt;= 2.0 or pyarrow
+            &gt;= 16; Spark's vectorized reader does not support it.
+            Default: false
           --partitiongenerator, --pg
             Method of generating partition keys.  Supports random, normal
             (gaussian), and sequence.
@@ -758,6 +769,10 @@ Usage: cassandra-easy-stress [options] [command] [command options]
             default with CASSANDRA_EASY_STRESS_PROM_PORT, or set to 0 to
             disable.
             Default: 9500
+          --protocol-compression
+            Protocol compression algorithm ('lz4' or 'none'). Default is
+            'lz4'.
+            Default: lz4
           --queue
             Queue Depth.  2x the rate by default.
             Default: 10000
@@ -1041,6 +1056,17 @@ For example, running a test for 1 hours and 30 minutes will be done as follows:<
 </div>
 </div>
 <div class="sect3">
+<h4 id="_mutation_tracking">Mutation Tracking</h4>
+<div class="paragraph">
+<p>The <code>--mutation-tracking</code> flag creates the keyspace with mutation tracking enabled by appending <code>replication_type = 'tracked'</code> to the <code>CREATE KEYSPACE</code> statement.  This works with any workload, but requires a Cassandra version that supports mutation tracking.  It has no effect on a keyspace that already exists, so combine it with <code>--drop</code> if needed.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">cassandra-easy-stress run KeyValue --mutation-tracking --drop</code></pre>
+</div>
+</div>
+</div>
+<div class="sect3">
 <h4 id="_customizing_fields">Customizing Fields</h4>
 <div class="paragraph">
 <p>To some extent, workloads can be customized by leveraging the <code>--fields</code>
@@ -1112,6 +1138,10 @@ workload to specify which fields can be used this way.</p>
 </div>
 <div class="paragraph">
 <p>If a directory is provided instead of a file, cassandra-easy-stress will automatically create an appropriately named file in that directory.</p>
+</div>
+<div class="paragraph">
+<p>Add <code>--parquet-byte-stream-split</code> to use <code>BYTE_STREAM_SPLIT</code> encoding for the <code>*_duration_ns</code> columns, which makes the file smaller.
+It is off by default because the reader must support <code>BYTE_STREAM_SPLIT</code> on <code>INT64</code> columns (e.g. DuckDB 2.0+ or pyarrow 16+; Spark&#8217;s vectorized reader does not).</p>
 </div>
 <div class="sect3">
 <h4 id="_parquet_schema_reference">Parquet Schema Reference</h4>
@@ -1327,7 +1357,7 @@ GROUP BY operation;</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2026-03-07 10:33:40 UTC
+Last updated 2026-10-30 17:59:17 UTC
 </div>
 </div>
 </body>
